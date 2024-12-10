@@ -63,7 +63,7 @@ trainer.fit(model, train_loader, val_loader, ckpt_path=last_checkpoint)
 
 
 
-# _______________ sample from model ______________
+# _______________ sample from model _________________
 
 gif_shape = [3, 3]
 sample_batch_size = gif_shape[0] * gif_shape[1]
