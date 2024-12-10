@@ -51,16 +51,15 @@ tb_logger = pl.loggers.TensorBoardLogger(
 )
 
 trainer = pl.Trainer(
-    max_epochs=max_epoch, 
-    log_every_n_steps=10, 
-    gpus=1, 
-    auto_select_gpus=True,
-    resume_from_checkpoint=last_checkpoint, 
+    max_epochs=max_epoch,
+    log_every_n_steps=10,
+    devices=1,
+    accelerator="gpu",
     logger=tb_logger
 )
 
 # Train model
-trainer.fit(model, train_loader, val_loader)
+trainer.fit(model, train_loader, val_loader, ckpt_path=last_checkpoint)
 
 
 
