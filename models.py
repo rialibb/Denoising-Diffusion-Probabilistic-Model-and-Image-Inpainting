@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import pytorch_lightning as pl
 from blocks import ResidualBlock, Downsample, Upsample, PositionalEmbedding
-
+from config import device
 
 class Diffusion(nn.Module):
     """Diffusion model with a linear schedule of the temperatures.
@@ -11,7 +11,7 @@ class Diffusion(nn.Module):
         super().__init__()
         
         self.num_timesteps=num_timesteps
-        self.betas=torch.linspace(0.0001, 0.02, steps= self.num_timesteps )
+        self.betas=torch.linspace(0.0001, 0.02, steps= self.num_timesteps ).to(device)
         
         
                 
@@ -67,7 +67,7 @@ class Diffusion(nn.Module):
           a matrix correspond to the value of alpha bar for every observaion in the batch
         """
         a=torch.cumprod(1-betas,dim=0)
-        L = torch.zeros(shape)
+        L = torch.zeros(shape).to(device)
         for i in range (shape[0]):
             L[i] = a[t[i].long()]*torch.ones(shape[1:])
         return L

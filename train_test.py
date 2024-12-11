@@ -63,8 +63,6 @@ def f_train(
     logging.basicConfig(filename=logging_file)
 
     # We use cross-entropy as it is well-known for performing well in classification problems
-    diffusion.to(device)
-    unet.to(device)
     loss_func = torch.nn.MSELoss()
     optimizer=torch.optim.Adam(unet.parameters(),lr=learning_rate)
     scheduler = OneCycleLR(optimizer,max_lr=learning_rate, epochs = n_epochs, steps_per_epoch= len(trainloader), pct_start = 0.1)

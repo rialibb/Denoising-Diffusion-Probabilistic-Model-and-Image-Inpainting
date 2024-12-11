@@ -49,6 +49,8 @@ unet = UNet(
     time_emb_dim=32,
     num_classes=None,
 )
+diffusion.to(device)
+unet.to(device)
 
 
 
