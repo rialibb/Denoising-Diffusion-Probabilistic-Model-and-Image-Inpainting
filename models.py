@@ -69,7 +69,7 @@ class Diffusion(nn.Module):
         a=torch.cumprod(1-betas,dim=0).to(device)
         L = torch.zeros(shape).to(device)
         for i in range (shape[0]):
-            L[i] = a[t[i].long()]*torch.ones(shape[1:])
+            L[i] = a[t[i].long()]*torch.ones(shape[1:]).to(device)
         return L
 
 
