@@ -163,9 +163,6 @@ def f_test(
     diffusion.eval()
     unet.eval()
     test_loss = []
-    
-    real_images = []
-    generated_images = []
 
     logging.info(f"----------------------- Starting TESTING -----------------------")
     with torch.no_grad():
@@ -181,24 +178,7 @@ def f_test(
             # Compute loss
             loss = loss_func(predicted_noise, epsilon)
             test_loss.append(loss.item())
-            
-            # add batch images 
-            real_images.append(images.cpu())
-            # add generated images
-            generated_samples = diffusion.sample(unet, images.shape).cpu()
-            generated_images.append(generated_samples)
-            
     avg_test_loss = np.mean(test_loss)
-    
-    # Flatten lists into tensors
-    real_images = torch.cat(real_images)
-    generated_images = torch.cat(generated_images)
 
-    # Normalize images to [0, 1] for FID calculation
-    real_images = ((real_images + 1) / 2).clamp(0, 1)
-    generated_images = ((generated_images + 1) / 2).clamp(0, 1)
-    #calculate bthe FID score
-    FID = fid_score.calculate_from_tensors(real_images, generated_images, device=device)
-
-    logging.info(f"Test Loss: {avg_test_loss:.4f}, Test FID: {FID:.4f}")
+    logging.info(f"Test Loss: {avg_test_loss:.4f}")
     logging.info("----------------------FINISHED TESTING----------------------")
