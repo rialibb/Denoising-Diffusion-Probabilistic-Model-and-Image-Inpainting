@@ -46,13 +46,13 @@ class Diffusion(nn.Module):
         Note: Create new tensors on the same device where the model is.
         """
 
-        x = torch.randn(x_shape).to(model.device)
+        x = torch.randn(x_shape).to(device)
         for t in range(self.num_timesteps, 0, -1):
             if t>1 : 
-                z=torch.randn(x_shape).to(model.device)
+                z=torch.randn(x_shape).to(device)
             else:
                 z=0
-            Ti = torch.ones(x_shape[0],device=model.device)*t
+            Ti = torch.ones(x_shape[0],device=device)*t
             x=(1/(torch.sqrt(1-self.betas[t-1]))) * (x - (self.betas[t-1])*model(x,Ti,labels) / torch.sqrt(1-torch.prod(1-self.betas[:t])*torch.ones(x_shape[1:])))+torch.sqrt(self.betas[t-1])*z
         return x
        
