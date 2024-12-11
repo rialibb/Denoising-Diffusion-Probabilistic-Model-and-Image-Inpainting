@@ -53,7 +53,7 @@ class Diffusion(nn.Module):
             else:
                 z=0
             Ti = torch.ones(x_shape[0],device=device)*t
-            x=(1/(torch.sqrt(1-self.betas[t-1]))) * (x - (self.betas[t-1])*model(x,Ti,labels) / torch.sqrt(1-torch.prod(1-self.betas[:t])*torch.ones(x_shape[1:])))+torch.sqrt(self.betas[t-1])*z
+            x=(1/(torch.sqrt(1-self.betas[t-1]))) * (x - (self.betas[t-1])*model(x,Ti,labels) / torch.sqrt(1-torch.prod(1-self.betas[:t])*torch.ones(x_shape[1:]).to(device)))+torch.sqrt(self.betas[t-1])*z
         return x
        
         
