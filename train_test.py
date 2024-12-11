@@ -26,8 +26,7 @@ def f_train(
     trainloader: DataLoader,
     valloader: DataLoader,
     n_epochs: int = 20,
-    learning_rate: float = 0.001,
-    logging_file: str = "training.log",
+    learning_rate: float = 0.001
 ):
     """Train the diffusion model to predict the noise
 
@@ -45,11 +44,8 @@ def f_train(
         number of epchs for training
     learning_rate: float
         the learning rate to use for training
-    logging_file: str
-        path to the file to load logs 
     """
     logging.basicConfig(
-        filename=logging_file,
         stream=sys.stdout,  
         level=logging.INFO
     )
@@ -166,8 +162,7 @@ def f_train(
 def f_test(
     diffusion: nn.Module,
     unet: nn.Module,
-    testloader: DataLoader,
-    logging_file: str = "test.log",
+    testloader: DataLoader
 ):
     """test the diffusion model on the test loader
 
@@ -179,12 +174,9 @@ def f_test(
         model to predixt noise for diffusion 
     testloader: DataLoader
         the test dataloader 
-    logging_file: str
-        path to the file to load logs 
     """
     
     logging.basicConfig(
-        filename=logging_file,
         stream=sys.stdout,  
         level=logging.INFO
     )
