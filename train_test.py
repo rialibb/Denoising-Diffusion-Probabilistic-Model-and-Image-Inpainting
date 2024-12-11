@@ -47,7 +47,8 @@ def f_train(
     """
     logging.basicConfig(
         stream=sys.stdout,  
-        level=logging.INFO
+        level=logging.INFO,
+        format="%(message)s"
     )
     # retrieve current Date/time
     date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -137,7 +138,7 @@ def f_train(
             count_no_improvement = 0
             # Save the best model
             torch.save(unet.state_dict(), "best_unet_model.pth")
-            print(f"Validation loss improved. Model saved.")
+            print(f"Validation loss improved.")
         else:
             count_no_improvement += 1
             print(f"No improvement in validation loss for {count_no_improvement} epoch(s).")
@@ -148,8 +149,8 @@ def f_train(
             break
 
     # save the model
-    tools.save_model(diffusion, 'saved_models/diffusion.pth', confirm=True)
-    tools.save_model(unet, 'saved_models/unet.pth', confirm=True)
+    torch.save(diffusion.state_dict(), 'saved_models/diffusion.pth')
+    torch.save(unet.state_dict(), 'saved_models/unet.pth')
     logging.info("Model saved")
 
     logging.info("----------------------FINISHED TRAINING----------------------")
@@ -178,7 +179,8 @@ def f_test(
     
     logging.basicConfig(
         stream=sys.stdout,  
-        level=logging.INFO
+        level=logging.INFO,
+        format="%(message)s"
     )
         
     loss_func = torch.nn.MSELoss()

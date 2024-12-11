@@ -63,6 +63,6 @@ if not skip_training:
     f_test(diffusion, unet, test_loader)
 
 else:
-    tools.load_model(diffusion, 'saved_models/diffusion.pth', device)
-    tools.load_model(unet, 'saved_models/unet.pth', device)
+    diffusion.load_state_dict(torch.load('saved_models/diffusion.pth'))
+    unet.load_state_dict(torch.load('saved_models/unet.pth'))
     
