@@ -4,3 +4,6 @@ numpy
 matplotlib
 pytorch-fid
 tools
+matplotlib
+einops
+IPython
