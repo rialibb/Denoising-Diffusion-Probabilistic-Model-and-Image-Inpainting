@@ -89,7 +89,7 @@ def exponential_schedule(sigma_min=0.0001, sigma_max=0.02, T=1000):
     Returns:
         np.ndarray: Exponential noise levels for each timestep.
     """
-    t = np.linspace(0, 1, T)  # Timesteps in range [0, 1]
+    t = torch.linspace(0, 1, T)  # Timesteps in range [0, 1]
     schedule = sigma_min * (sigma_max / sigma_min) ** t
     return schedule
 
@@ -110,6 +110,7 @@ def logarithmic_schedule(beta_min=0.0001, beta_max=0.02, T=1000, c=10):
     Returns:
         np.ndarray: Logarithmic noise levels for each timestep.
     """
-    timesteps = np.linspace(0, T, T)  # Avoid log(0) by starting from 1
-    normalized_log = np.log(1 + c * timesteps) / np.log(1 + c * T)
+    timesteps = torch.linspace(0, T, T) 
+    denominator = torch.log(torch.tensor(1 + c * T, dtype=torch.float32))
+    normalized_log = torch.log(1 + c * timesteps) / denominator
     return beta_min + (beta_max - beta_min) * normalized_log

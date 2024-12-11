@@ -3,15 +3,14 @@ from data import DiffSet
 import pytorch_lightning as pl
 from schedules import linear_schedule, cosine_schedule, quadratic_schedule, exponential_schedule, logarithmic_schedule
 from torch.utils.data import DataLoader, random_split
-import imageio
-import glob
 from models import Diffusion, UNet
 from train_test import f_train, f_test
 from config import device
+from tools import save_images
 
 
 # skip training
-skip_training = False
+skip_training = True
 
 
 
@@ -74,3 +73,9 @@ else:
     diffusion.load_state_dict(torch.load('saved_models/diffusion.pth'))
     unet.load_state_dict(torch.load('saved_models/unet.pth'))
     
+    
+# Sample generation
+x_shape = (100, 1, 32, 32)
+samples = diffusion.sample(unet, x_shape)
+samples01 = ((samples + 1) / 2).clip(0, 1)
+save_images(samples01, save_dir='generated_samples', cmap='binary', ncol=10)
