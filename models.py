@@ -66,7 +66,7 @@ class Diffusion(nn.Module):
         Return: 
           a matrix correspond to the value of alpha bar for every observaion in the batch
         """
-        a=torch.cumprod(1-betas,dim=0)
+        a=torch.cumprod(1-betas,dim=0).to(device)
         L = torch.zeros(shape).to(device)
         for i in range (shape[0]):
             L[i] = a[t[i].long()]*torch.ones(shape[1:])
