@@ -1,1 +1,1 @@
-from models import Diffusion, UNet
+from .models import Diffusion, UNet

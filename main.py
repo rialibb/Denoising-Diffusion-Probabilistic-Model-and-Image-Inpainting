@@ -17,7 +17,7 @@ skip_training = True
 # Training hyperparameters
 
 num_timesteps = 1000
-dataset_choice = "MNIST"
+dataset_choice = "MNIST"   # "MNIST", "Fashion" or "CIFAR"
 beta_min = 0.0001
 beta_max = 0.02
 n_epochs = 20
@@ -51,7 +51,7 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 # Create models
 diffusion = Diffusion(betas, 1000)
 unet = UNet(
-    img_channels=1,
+    img_channels=3 if dataset_choice=='CIFAR' else 1,
     base_channels=32,
     time_emb_dim=32,
     num_classes=None,

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
-from blocks import ResidualBlock, Downsample, Upsample, PositionalEmbedding
+from .blocks import ResidualBlock, Downsample, Upsample, PositionalEmbedding
 from config import device
 
 class Diffusion(nn.Module):
