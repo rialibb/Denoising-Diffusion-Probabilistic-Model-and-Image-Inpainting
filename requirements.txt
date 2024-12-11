@@ -3,6 +3,4 @@ torchaudio
 numpy
 matplotlib
 pytorch-fid
-imageio
-glob
 tools
