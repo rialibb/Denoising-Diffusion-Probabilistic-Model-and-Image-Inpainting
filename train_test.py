@@ -117,8 +117,9 @@ def f_train(
             previous_val_loss = avg_val_loss
             count_no_improvement = 0
             # Save the best model
-            torch.save(unet.state_dict(), "best_unet_model.pth")
-            print(f"Validation loss improved.")
+            torch.save(diffusion.state_dict(), 'saved_models/diffusion.pth')
+            torch.save(unet.state_dict(), 'saved_models/unet.pth')
+            print(f"Validation loss improved. Models saved")
         else:
             count_no_improvement += 1
             print(f"No improvement in validation loss for {count_no_improvement} epoch(s).")
@@ -127,11 +128,6 @@ def f_train(
         if count_no_improvement >= early_stopping_patience:
             print(f"Early stopping triggered. No improvement in validation loss for {early_stopping_patience} epochs.")
             break
-
-    # save the model
-    torch.save(diffusion.state_dict(), 'saved_models/diffusion.pth')
-    torch.save(unet.state_dict(), 'saved_models/unet.pth')
-    logging.info("Model saved")
 
     logging.info("----------------------FINISHED TRAINING----------------------")
     
