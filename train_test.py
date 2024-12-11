@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import OneCycleLR
 import datetime
-from models import Diffusion, UNet
 import logging
 from torch.utils.data import DataLoader
 from config import device

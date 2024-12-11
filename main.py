@@ -1,9 +1,9 @@
 import torch
-from data import DiffSet
+from dataset import DiffSet
 import pytorch_lightning as pl
-from schedules import linear_schedule, cosine_schedule, quadratic_schedule, exponential_schedule, logarithmic_schedule
+from schedules.schedules import linear_schedule, cosine_schedule, quadratic_schedule, exponential_schedule, logarithmic_schedule
 from torch.utils.data import DataLoader, random_split
-from models import Diffusion, UNet
+from diffusion_model import Diffusion, UNet
 from train_test import f_train, f_test
 from config import device
 from tools import save_images
@@ -70,8 +70,9 @@ if not skip_training:
     f_test(diffusion, unet, test_loader)
 
 else:
-    diffusion.load_state_dict(torch.load('saved_models/diffusion.pth'))
-    unet.load_state_dict(torch.load('saved_models/unet.pth'))
+    # import trained model
+    diffusion.load_state_dict(torch.load(f'saved_models/{dataset_choice}_diffusion.pth'))
+    unet.load_state_dict(torch.load(f'saved_models/{dataset_choice}_unet.pth'))
     
     
 # Sample generation
