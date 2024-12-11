@@ -82,8 +82,8 @@ def f_train(
         unet.train()
         train_loss = []
         
-        for images, labels in trainloader :
-            images,labels=images.to(device),labels.to(device)
+        for images in trainloader :
+            images=images.to(device)
             t=torch.linspace(0, diffusion.num_timesteps-1, images.shape[0]).to(device)   
             epsilon=torch.randn(images.shape).to(device)
             
@@ -109,8 +109,8 @@ def f_train(
         generated_images = []
 
         with torch.no_grad():
-            for images, labels in valloader:  
-                images, labels = images.to(device), labels.to(device)
+            for images in valloader:  
+                images = images.to(device)
                 t = torch.randint(0, diffusion.num_timesteps, (images.shape[0],), device=device)
                 epsilon = torch.randn(images.shape, device=device)
                 
@@ -199,8 +199,8 @@ def f_test(
 
     notify(f"----------------------- Starting TESTING -----------------------")
     with torch.no_grad():
-        for images, labels in testloader:  
-            images, labels = images.to(device), labels.to(device)
+        for images in testloader:  
+            images = images.to(device)
             t = torch.randint(0, diffusion.num_timesteps, (images.shape[0],), device=device)
             epsilon = torch.randn(images.shape, device=device)
             
