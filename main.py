@@ -65,7 +65,7 @@ unet.to(device)
 # train the model
 if not skip_training:
     # training the models
-    f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
+    f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr, dataset_choice=dataset_choice)
     # testing the models
     f_test(diffusion, unet, test_loader)
 
@@ -78,4 +78,4 @@ else:
 x_shape = (100, 1, 32, 32)
 samples = diffusion.sample(unet, x_shape)
 samples01 = ((samples + 1) / 2).clip(0, 1)
-save_images(samples01, save_dir='generated_samples', cmap='binary', ncol=10)
+save_images(samples01, dataset_choice, save_dir='generated_samples', cmap='binary', ncol=10)

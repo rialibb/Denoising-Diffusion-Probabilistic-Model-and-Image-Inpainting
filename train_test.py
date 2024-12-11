@@ -10,6 +10,7 @@ from config import device
 import numpy as np
 from pytorch_fid import fid_score
 import sys
+import os
 
 
 
@@ -25,7 +26,9 @@ def f_train(
     trainloader: DataLoader,
     valloader: DataLoader,
     n_epochs: int = 20,
-    learning_rate: float = 0.001
+    learning_rate: float = 0.001,
+    dataset_choice: str='MNIST',
+    save_dir: str = 'saved_models'
 ):
     """Train the diffusion model to predict the noise
 
@@ -43,12 +46,23 @@ def f_train(
         number of epchs for training
     learning_rate: float
         the learning rate to use for training
+    dataset_choice: str
+        the dataset to consider to train the diffusion model
+    save_dir: str
+        the directory to save the model
     """
     logging.basicConfig(
         stream=sys.stdout,  
         level=logging.INFO,
         format="%(message)s"
     )
+    
+    # Create the folder if it doesn't exist
+    os.makedirs(save_dir, exist_ok=True)
+    # create the save path for the model
+    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_diffusion.pth')
+    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_unet.pth')
+    
     # retrieve current Date/time
     date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     logging.info(f"{date}")
@@ -116,8 +130,8 @@ def f_train(
             previous_val_loss = avg_val_loss
             count_no_improvement = 0
             # Save the best model
-            torch.save(diffusion.state_dict(), 'saved_models/diffusion.pth')
-            torch.save(unet.state_dict(), 'saved_models/unet.pth')
+            torch.save(diffusion.state_dict(), save_path_diffusion)
+            torch.save(unet.state_dict(), save_path_unet)
             print(f"Validation loss improved. Models saved")
         else:
             count_no_improvement += 1

@@ -3,7 +3,7 @@ from datetime import datetime
 from PIL import Image
 from einops import rearrange  # Ensure you have this library installed: `pip install einops`
 
-def save_images(images, save_dir='generated_samples', ncol=10, **kwargs):
+def save_images(images, dataset_choice, save_dir='generated_samples', ncol=10, **kwargs):
     """
     Save generated images to a folder instead of displaying them.
 
@@ -17,7 +17,7 @@ def save_images(images, save_dir='generated_samples', ncol=10, **kwargs):
 
     # Generate a unique filename using the current timestamp
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    save_path = os.path.join(save_dir, f'samples_{timestamp}.png')
+    save_path = os.path.join(save_dir, f'{dataset_choice}_samples_{timestamp}.png')
 
     # Rearrange the images into a grid
     out = rearrange(images, '(b1 b2) c h w -> c (b1 h) (b2 w)', b2=ncol).cpu()
