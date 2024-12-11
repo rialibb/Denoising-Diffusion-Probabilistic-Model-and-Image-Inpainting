@@ -1,104 +1,66 @@
 import torch
 from data import DiffSet
 import pytorch_lightning as pl
-from model import DiffusionModel
-from torch.utils.data import DataLoader
+
+from torch.utils.data import DataLoader, random_split
 import imageio
 import glob
+from models import Diffusion, UNet
+from train_test import f_train, f_test
+import tools
+from config import device
 
-# _________ set model params______________
+
+# skip training
+skip_training = False
+
 
 # Training hyperparameters
-diffusion_steps = 1000
+num_timesteps = 1000
 dataset_choice = "CIFAR"
-max_epoch = 10
+beta_min = 0.0001
+beta_max = 0.02
+n_epochs = 20
 batch_size = 128
+lr = 0.001
 
-# Loading parameters
-load_model = False
-load_version_num = 1
+# load dataset
+train_val_dataset = DiffSet(True, dataset_choice)
+test_dataset = DiffSet(False, dataset_choice)
 
-# ____________ load dataset and train model ___________________
+train_size = int(0.8 * len(train_val_dataset))
+val_size = len(train_val_dataset) - train_size
+train_dataset, val_dataset = random_split(train_val_dataset, [train_size, val_size])
 
-# Code for optionally loading model
-pass_version = None
-last_checkpoint = None
+# dataloaders
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
-if load_model:
-    pass_version = load_version_num
-    last_checkpoint = glob.glob(
-        f"./lightning_logs/{dataset_choice}/version_{load_version_num}/checkpoints/*.ckpt"
-    )[-1]
-    
-# Create datasets and data loaders
-train_dataset = DiffSet(True, dataset_choice)
-val_dataset = DiffSet(False, dataset_choice)
 
-train_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=4, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=batch_size, num_workers=4, shuffle=True)
 
-# Create model and trainer
-if load_model:
-    model = DiffusionModel.load_from_checkpoint(last_checkpoint, in_size=train_dataset.size*train_dataset.size, t_range=diffusion_steps, img_depth=train_dataset.depth)
+
+
+# Create models
+diffusion = Diffusion(1000)
+unet = UNet(
+    img_channels=1,
+    base_channels=32,
+    time_emb_dim=32,
+    num_classes=None,
+)
+
+
+
+
+# train the model
+if not skip_training:
+    # training the models
+    f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
+    # testing the models
+    f_test(diffusion, unet, test_loader)
+
 else:
-    model = DiffusionModel(train_dataset.size*train_dataset.size, diffusion_steps, train_dataset.depth)
+    tools.load_model(diffusion, 'saved_models/diffusion.pth', device)
+    tools.load_model(unet, 'saved_models/unet.pth', device)
     
-# Load Trainer model
-tb_logger = pl.loggers.TensorBoardLogger(
-    "lightning_logs/",
-    name=dataset_choice,
-    version=pass_version,
-)
-
-trainer = pl.Trainer(
-    max_epochs=max_epoch,
-    log_every_n_steps=10,
-    devices=1,
-    accelerator="gpu",
-    logger=tb_logger
-)
-
-# Train model
-trainer.fit(model, train_loader, val_loader, ckpt_path=last_checkpoint)
-
-
-
-# _______________ sample from model _________________
-
-gif_shape = [3, 3]
-sample_batch_size = gif_shape[0] * gif_shape[1]
-n_hold_final = 10
-
-# Generate samples from denoising process
-gen_samples = []
-x = torch.randn((sample_batch_size, train_dataset.depth, train_dataset.size, train_dataset.size))
-sample_steps = torch.arange(model.t_range-1, 0, -1)
-for t in sample_steps:
-    x = model.denoise_sample(x, t)
-    if t % 50 == 0:
-        gen_samples.append(x)
-for _ in range(n_hold_final):
-    gen_samples.append(x)
-gen_samples = torch.stack(gen_samples, dim=0).moveaxis(2, 4).squeeze(-1)
-gen_samples = (gen_samples.clamp(-1, 1) + 1) / 2
-
-
-
-# Process samples and save as gif
-gen_samples = (gen_samples * 255).type(torch.uint8)
-gen_samples = gen_samples.reshape(-1, gif_shape[0], gif_shape[1], train_dataset.size, train_dataset.size, train_dataset.depth)
-
-def stack_samples(gen_samples, stack_dim):
-    gen_samples = list(torch.split(gen_samples, 1, dim=1))
-    for i in range(len(gen_samples)):
-        gen_samples[i] = gen_samples[i].squeeze(1)
-    return torch.cat(gen_samples, dim=stack_dim)
-
-gen_samples = stack_samples(gen_samples, 2)
-gen_samples = stack_samples(gen_samples, 2)
-
-imageio.mimsave(
-    f"{trainer.logger.log_dir}/pred.gif",
-    list(gen_samples),
-    fps=5,
-)
