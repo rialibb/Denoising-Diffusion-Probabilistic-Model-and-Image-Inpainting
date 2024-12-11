@@ -50,7 +50,7 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 
 # Create models
-diffusion = Diffusion(1000)
+diffusion = Diffusion(betas, 1000)
 unet = UNet(
     img_channels=1,
     base_channels=32,
