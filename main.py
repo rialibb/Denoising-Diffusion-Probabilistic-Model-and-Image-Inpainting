@@ -33,7 +33,7 @@ betas = linear_schedule(beta_min=beta_min, beta_max=beta_max, T=num_timesteps)
 
 
 # load dataset
-train_val_dataset = DiffSet(True, betas, dataset_choice)
+train_val_dataset = DiffSet(True, dataset_choice)
 test_dataset = DiffSet(False, dataset_choice)
 
 train_size = int(0.8 * len(train_val_dataset))
