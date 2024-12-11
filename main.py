@@ -7,7 +7,6 @@ import imageio
 import glob
 from models import Diffusion, UNet
 from train_test import f_train, f_test
-import tools
 from config import device
 
 

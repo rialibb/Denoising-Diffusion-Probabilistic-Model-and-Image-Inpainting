@@ -8,7 +8,6 @@ import logging
 from torch.utils.data import DataLoader
 from config import device
 import numpy as np
-import tools
 from pytorch_fid import fid_score
 import sys
 
