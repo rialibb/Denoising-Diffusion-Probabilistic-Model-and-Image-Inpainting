@@ -7,11 +7,11 @@ from config import device
 class Diffusion(nn.Module):
     """Diffusion model with a linear schedule of the temperatures.
     """
-    def __init__(self, num_timesteps=1000):
+    def __init__(self, betas, num_timesteps=1000):
         super().__init__()
         
         self.num_timesteps=num_timesteps
-        self.betas=torch.linspace(0.0001, 0.02, steps= self.num_timesteps ).to(device)
+        self.betas = betas
         
         
                 

@@ -1,7 +1,7 @@
 import torch
 from data import DiffSet
 import pytorch_lightning as pl
-
+from schedules import linear_schedule, cosine_schedule, quadratic_schedule, exponential_schedule, logarithmic_schedule
 from torch.utils.data import DataLoader, random_split
 import imageio
 import glob
@@ -14,7 +14,9 @@ from config import device
 skip_training = False
 
 
+
 # Training hyperparameters
+
 num_timesteps = 1000
 dataset_choice = "MNIST"
 beta_min = 0.0001
@@ -23,8 +25,15 @@ n_epochs = 20
 batch_size = 128
 lr = 0.001
 
+
+
+# define the schedule type
+betas = linear_schedule(beta_min=beta_min, beta_max=beta_max, T=num_timesteps)
+
+
+
 # load dataset
-train_val_dataset = DiffSet(True, dataset_choice)
+train_val_dataset = DiffSet(True, betas, dataset_choice)
 test_dataset = DiffSet(False, dataset_choice)
 
 train_size = int(0.8 * len(train_val_dataset))
