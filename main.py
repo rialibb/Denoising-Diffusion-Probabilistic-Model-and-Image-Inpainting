@@ -17,7 +17,7 @@ skip_training = False
 
 # Training hyperparameters
 num_timesteps = 1000
-dataset_choice = "CIFAR"
+dataset_choice = "MNIST"
 beta_min = 0.0001
 beta_max = 0.02
 n_epochs = 20
