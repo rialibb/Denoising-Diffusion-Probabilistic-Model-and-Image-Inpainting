@@ -10,22 +10,14 @@ from config import device
 import numpy as np
 import tools
 from pytorch_fid import fid_score
+import sys
 
 
 
 
-def notify(*msg: str):
-    """ print logs in terminal
 
-    Parameters
-    ----------
-    msg: str
-        the message to print
-    """
-    message = " ".join(msg)
-    print(message)
 
-notify("Job started!")
+print("Job started!")
 
 
 def f_train(
@@ -56,11 +48,14 @@ def f_train(
     logging_file: str
         path to the file to load logs 
     """
-
+    logging.basicConfig(
+        filename=logging_file,
+        stream=sys.stdout,  
+        level=logging.INFO
+    )
     # retrieve current Date/time
     date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    notify(f"{date}")
-    logging.basicConfig(filename=logging_file)
+    logging.info(f"{date}")
 
     # We use cross-entropy as it is well-known for performing well in classification problems
     loss_func = torch.nn.MSELoss()
@@ -72,7 +67,7 @@ def f_train(
     previous_val_loss = float('inf')
     count_no_improvement = 0
 
-    notify(f"----------------------- Starting training -----------------------")
+    logging.info(f"----------------------- Starting training -----------------------")
     for epoch in range(n_epochs):
         
         # training Phase
@@ -138,7 +133,7 @@ def f_train(
         #calculate bthe FID score
         FID = fid_score.calculate_from_tensors(real_images, generated_images, device=device)
 
-        notify(f"Epoch {epoch+1}/{n_epochs}, Train Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}, Validation FID: {FID:.4f},  Last value of learning rate for this epoch: {scheduler.get_last_lr()}")
+        logging.info(f"Epoch {epoch+1}/{n_epochs}, Train Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}, Validation FID: {FID:.4f},  Last value of learning rate for this epoch: {scheduler.get_last_lr()}")
 
         # Check for improvement
         if avg_val_loss < previous_val_loss:
@@ -159,9 +154,9 @@ def f_train(
     # save the model
     tools.save_model(diffusion, 'saved_models/diffusion.pth', confirm=True)
     tools.save_model(unet, 'saved_models/unet.pth', confirm=True)
-    notify("Model saved")
+    logging.info("Model saved")
 
-    notify("----------------------FINISHED TRAINING----------------------")
+    logging.info("----------------------FINISHED TRAINING----------------------")
     
     
     
@@ -187,6 +182,13 @@ def f_test(
     logging_file: str
         path to the file to load logs 
     """
+    
+    logging.basicConfig(
+        filename=logging_file,
+        stream=sys.stdout,  
+        level=logging.INFO
+    )
+        
     loss_func = torch.nn.MSELoss()
     diffusion.eval()
     unet.eval()
@@ -195,7 +197,7 @@ def f_test(
     real_images = []
     generated_images = []
 
-    notify(f"----------------------- Starting TESTING -----------------------")
+    logging.info(f"----------------------- Starting TESTING -----------------------")
     with torch.no_grad():
         for images in testloader:  
             images = images.to(device)
@@ -228,5 +230,5 @@ def f_test(
     #calculate bthe FID score
     FID = fid_score.calculate_from_tensors(real_images, generated_images, device=device)
 
-    notify(f"Test Loss: {avg_test_loss:.4f}, Test FID: {FID:.4f}")
-    notify("----------------------FINISHED TESTING----------------------")
+    logging.info(f"Test Loss: {avg_test_loss:.4f}, Test FID: {FID:.4f}")
+    logging.info("----------------------FINISHED TESTING----------------------")
