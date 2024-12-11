@@ -180,4 +180,4 @@ def f_test(
     avg_test_loss = np.mean(test_loss)
 
     logging.info(f"Test Loss: {avg_test_loss:.4f}")
-    logging.info("----------------------FINISHED TESTING----------------------")
+    logging.info("---------------------- FINISHED TESTING----------------------")
