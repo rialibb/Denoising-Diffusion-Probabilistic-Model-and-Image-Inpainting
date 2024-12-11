@@ -1,9 +1,9 @@
 import torch
-from data import DiffSet
+from dataset import DiffSet
 import pytorch_lightning as pl
-from schedules import linear_schedule, cosine_schedule, quadratic_schedule, exponential_schedule, logarithmic_schedule
+from schedules.schedules import linear_schedule, cosine_schedule, quadratic_schedule, exponential_schedule, logarithmic_schedule
 from torch.utils.data import DataLoader, random_split
-from models import Diffusion, UNet
+from diffusion_model import Diffusion, UNet
 from train_test import f_train, f_test
 from config import device
 from tools import save_images
@@ -17,7 +17,7 @@ skip_training = True
 # Training hyperparameters
 
 num_timesteps = 1000
-dataset_choice = "MNIST"
+dataset_choice = "MNIST"   # "MNIST", "Fashion" or "CIFAR"
 beta_min = 0.0001
 beta_max = 0.02
 n_epochs = 20
@@ -51,7 +51,7 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 # Create models
 diffusion = Diffusion(betas, 1000)
 unet = UNet(
-    img_channels=1,
+    img_channels=3 if dataset_choice=='CIFAR' else 1,
     base_channels=32,
     time_emb_dim=32,
     num_classes=None,
@@ -65,17 +65,18 @@ unet.to(device)
 # train the model
 if not skip_training:
     # training the models
-    f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
+    f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr, dataset_choice=dataset_choice)
     # testing the models
     f_test(diffusion, unet, test_loader)
 
 else:
-    diffusion.load_state_dict(torch.load('saved_models/diffusion.pth'))
-    unet.load_state_dict(torch.load('saved_models/unet.pth'))
+    # import trained model
+    diffusion.load_state_dict(torch.load(f'saved_models/{dataset_choice}_diffusion.pth'))
+    unet.load_state_dict(torch.load(f'saved_models/{dataset_choice}_unet.pth'))
     
     
 # Sample generation
 x_shape = (100, 1, 32, 32)
 samples = diffusion.sample(unet, x_shape)
 samples01 = ((samples + 1) / 2).clip(0, 1)
-save_images(samples01, save_dir='generated_samples', cmap='binary', ncol=10)
+save_images(samples01, dataset_choice, save_dir='generated_samples', cmap='binary', ncol=10)
