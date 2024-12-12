@@ -237,7 +237,7 @@ class InPaint(nn.Module):
                 else :
                     epsilon=0
                 # Update known pixels with noise
-                alpha=torch.prod(1-diffusion.betas[:t])*torch.ones(x_shape[1:])
+                alpha=torch.prod(1-diffusion.betas[:t])*torch.ones(x_shape[1:], device=device)
                 x_t_minus1_known = torch.sqrt(alpha)*images+(1-alpha)*epsilon
 
                 # define z here
