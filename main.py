@@ -55,7 +55,7 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 
 # Create models
-diffusion = Diffusion(betas, 1000)
+diffusion = Diffusion(betas, num_timesteps)
 unet = UNet(
     img_channels = test_dataset.depth,
     base_channels = test_dataset.size,
@@ -82,10 +82,10 @@ else:
     
     
 # Sample generation
-x_shape = (100, test_dataset.depth, test_dataset.size, test_dataset.size)
+x_shape = (25, test_dataset.depth, test_dataset.size, test_dataset.size)
 samples = diffusion.sample(unet, x_shape)
 samples01 = ((samples + 1) / 2).clip(0, 1)
-save_images(samples01, dataset_choice, save_dir='generated_samples', image_type = 'samples' , cmap='binary', ncol=10)
+save_images(samples01, dataset_choice, save_dir='generated_samples', image_type = 'samples' , cmap='binary', ncol=5)
 
 
 

@@ -13,7 +13,7 @@ import numpy as np
 
 
 
-def save_images(images, dataset_choice, save_dir='generated_samples', image_type = 'samples', ncol=10, **kwargs):
+def save_images(images, dataset_choice, save_dir='generated_samples', image_type = 'samples', ncol=5, **kwargs):
     """
     Save generated images to a folder instead of displaying them.
 
