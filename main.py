@@ -3,7 +3,7 @@ from dataset import DiffSet
 import pytorch_lightning as pl
 from schedules.schedules import linear_schedule, cosine_schedule, quadratic_schedule, exponential_schedule, logarithmic_schedule
 from torch.utils.data import DataLoader, random_split
-from diffusion_model import Diffusion, UNet
+from diffusion_model import Diffusion, UNet, InPaint
 from train_test import f_train, f_test
 from config import device
 from tools import save_images
@@ -85,4 +85,12 @@ else:
 x_shape = (100, test_dataset.depth, test_dataset.size, test_dataset.size)
 samples = diffusion.sample(unet, x_shape)
 samples01 = ((samples + 1) / 2).clip(0, 1)
-save_images(samples01, dataset_choice, save_dir='generated_samples', cmap='binary', ncol=10)
+save_images(samples01, dataset_choice, save_dir='generated_samples', image_type = 'samples' , cmap='binary', ncol=10)
+
+
+
+# Inpainting masked image
+image = test_dataset[5]  # Select one image from the test dataset
+
+inpaint = InPaint()
+inpaint.sample(diffusion, unet, image, dataset_choice)
