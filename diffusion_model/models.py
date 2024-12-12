@@ -3,6 +3,9 @@ import torch.nn as nn
 import pytorch_lightning as pl
 from .blocks import ResidualBlock, Downsample, Upsample, PositionalEmbedding
 from config import device
+import numpy as np
+from tools import save_images
+
 
 class Diffusion(nn.Module):
     """Diffusion model with a linear schedule of the temperatures.
@@ -183,3 +186,93 @@ class UNet(nn.Module):
         x=self.decoder_cnv(x)
         
         return x
+      
+      
+      
+      
+      
+      
+  
+  
+class InPaint(nn.Module):
+    """The inpaint model.
+    
+    Args:
+      img_channels (int): Number of image channels.
+      base_channels (int): Number of base channels.
+      time_emb_dim (int or None): The size of the embedding vector produced by the MLP which embeds the time input.
+      num_classes (int or None): Number of classes, None for no conditioning on classes.
+    """
+
+    def __init__(self):  
+        super().__init__()
+      
+      
+    def forward(self, diffusion, model, images, mask_known, labels=None):
+        """Generate samples conditioned on known parts of images.
+        
+        Args:
+          diffusion (Diffusion): The descriptor of a diffusion model.
+          model: A denoising model: model(x, t, labels) outputs a denoised version of input x.
+          images of shape (batch_size, n_channels, H, W): Conditioning images.
+          mask_known of shape (batch_size, 1, H, W): BoolTensor which specifies known pixels in images (marked as True).
+          labels of shape (batch_size,): Classes of images, None for no conditioning on classes.
+        
+        Returns:
+          x of shape (batch_size, n_channels, H, W): Generated samples (one sample per input image).
+        """
+        # YOUR CODE HERE
+        
+        
+        x_shape = images.shape
+        x_t = torch.randn(x_shape).to(device)     
+        
+        with torch.no_grad() :
+          
+            for t in range(diffusion.num_timesteps,0,-1):
+
+                # define epsilon here
+                if t>1 :
+                    epsilon=torch.randn(x_shape).to(device) 
+                else :
+                    epsilon=0
+                # Update known pixels with noise
+                alpha=torch.prod(1-diffusion.betas[:t])*torch.ones(x_shape[1:], device=device)
+                x_t_minus1_known = torch.sqrt(alpha)*images+(1-alpha)*epsilon
+
+                # define z here
+                if t>1 :
+                    z=torch.randn(x_shape).to(device)  
+                else :
+                    z=0    
+                
+                Ti=torch.ones(x_shape[0],device=device)*t
+                #update unkown pixels with
+                x_t_minus1_unknown = (1/(torch.sqrt(1-diffusion.betas[t-1]))) * (x_t - (diffusion.betas[t-1])*model(x_t,Ti) / torch.sqrt(1-alpha))+torch.sqrt(diffusion.betas[t-1])*z
+                
+                x_t = x_t_minus1_known * mask_known +  x_t_minus1_unknown *  (~mask_known)
+
+        # Returnx_0
+        return x_t    
+    
+    
+    def sample(self, diffusion, model, image, dataset_choice):
+      
+        images = image[None, ...].tile(25, 1, 1, 1)  # Copy the image to generate multiple samples
+        images = images.to(device)
+        (batch_size, C, H, W) = images.shape
+        samples0 = ((images + 1) / 2).clip(0, 1)
+        save_images(samples0, dataset_choice, save_dir='Inpaint_images', image_type = 'original_image' , cmap='binary', ncol=5)
+
+        # mask out the bottom part of every image
+        mask_known = torch.zeros(batch_size, C, H, W, dtype=torch.bool, device=device)
+        mask_known[:, :, H//2: , :] = 1
+        images_known = images * mask_known
+
+        samples1 = ((images_known + 1) / 2).clip(0, 1)
+        save_images(samples1, dataset_choice, save_dir='Inpaint_images', image_type = 'masked_image' , cmap='binary', ncol=5)
+
+        samples = self.forward(diffusion, model, images_known, mask_known, labels=None)
+        samples2 = ((samples + 1) / 2).clip(0, 1)
+        save_images(samples2, dataset_choice, save_dir='Inpaint_images', image_type = 'inpaint_image_image' , cmap='binary', ncol=5)
+        

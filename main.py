@@ -3,7 +3,7 @@ from dataset import DiffSet
 import pytorch_lightning as pl
 from schedules.schedules import linear_schedule, cosine_schedule, quadratic_schedule, exponential_schedule, logarithmic_schedule
 from torch.utils.data import DataLoader, random_split
-from diffusion_model import Diffusion, UNet
+from diffusion_model import Diffusion, UNet, InPaint
 from train_test import f_train, f_test
 from config import device
 from tools import save_images
@@ -17,7 +17,7 @@ skip_training = True
 # Training hyperparameters
 
 num_timesteps = 1000
-dataset_choice = "MNIST"   # "MNIST", "Fashion" or "CIFAR"
+dataset_choice = "MNIST"   # "MNIST", "Fashion" ,  "CIFAR" or "CelebA"
 beta_min = 0.0001
 beta_max = 0.02
 n_epochs = 20
@@ -32,12 +32,18 @@ betas = linear_schedule(beta_min=beta_min, beta_max=beta_max, T=num_timesteps)
 
 
 # load dataset
-train_val_dataset = DiffSet(True, dataset_choice)
-test_dataset = DiffSet(False, dataset_choice)
+if dataset_choice == "CelebA":
+    train_dataset = DiffSet('train', dataset_choice)
+    val_dataset = DiffSet('valid', dataset_choice)
+    test_dataset = DiffSet('test', dataset_choice)
+    
+else:
+    train_val_dataset = DiffSet(True, dataset_choice)
+    test_dataset = DiffSet(False, dataset_choice)
 
-train_size = int(0.8 * len(train_val_dataset))
-val_size = len(train_val_dataset) - train_size
-train_dataset, val_dataset = random_split(train_val_dataset, [train_size, val_size])
+    train_size = int(0.8 * len(train_val_dataset))
+    val_size = len(train_val_dataset) - train_size
+    train_dataset, val_dataset = random_split(train_val_dataset, [train_size, val_size])
 
 # dataloaders
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -49,12 +55,12 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 
 # Create models
-diffusion = Diffusion(betas, 1000)
+diffusion = Diffusion(betas, num_timesteps)
 unet = UNet(
-    img_channels=3 if dataset_choice=='CIFAR' else 1,
-    base_channels=32,
-    time_emb_dim=32,
-    num_classes=None,
+    img_channels = test_dataset.depth,
+    base_channels = test_dataset.size,
+    time_emb_dim = test_dataset.size,
+    num_classes = None,
 )
 diffusion.to(device)
 unet.to(device)
@@ -76,7 +82,15 @@ else:
     
     
 # Sample generation
-x_shape = (100, 1, 32, 32)
+x_shape = (25, test_dataset.depth, test_dataset.size, test_dataset.size)
 samples = diffusion.sample(unet, x_shape)
 samples01 = ((samples + 1) / 2).clip(0, 1)
-save_images(samples01, dataset_choice, save_dir='generated_samples', cmap='binary', ncol=10)
+save_images(samples01, dataset_choice, save_dir='generated_samples', image_type = 'samples' , cmap='binary', ncol=5)
+
+
+
+# Inpainting masked image
+image = test_dataset[5643]  # Select one image from the test dataset
+
+inpaint = InPaint()
+inpaint.sample(diffusion, unet, image, dataset_choice)
