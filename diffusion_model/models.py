@@ -250,7 +250,7 @@ class InPaint(nn.Module):
                 #update unkown pixels with
                 x_t_minus1_unknown = (1/(torch.sqrt(1-diffusion.betas[t-1]))) * (x_t - (diffusion.betas[t-1])*model(x_t,Ti) / torch.sqrt(1-alpha))+torch.sqrt(diffusion.betas[t-1])*z
                 
-                x_t = np.dot(x_t_minus1_known , mask_known) + np.dot(x_t_minus1_unknown, (~mask_known))
+                x_t = torch.mm(x_t_minus1_known , mask_known) + torch.mm(x_t_minus1_unknown, (~mask_known))
 
         # Returnx_0
         return x_t    
