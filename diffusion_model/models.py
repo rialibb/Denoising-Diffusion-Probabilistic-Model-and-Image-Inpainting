@@ -250,7 +250,7 @@ class InPaint(nn.Module):
                 #update unkown pixels with
                 x_t_minus1_unknown = (1/(torch.sqrt(1-diffusion.betas[t-1]))) * (x_t - (diffusion.betas[t-1])*model(x_t,Ti) / torch.sqrt(1-alpha))+torch.sqrt(diffusion.betas[t-1])*z
                 
-                x_t = x_t_minus1_known * mask_known +  x_t_minus1_unknown *  (~mask_known))
+                x_t = x_t_minus1_known * mask_known +  x_t_minus1_unknown *  (~mask_known)
 
         # Returnx_0
         return x_t    
@@ -266,7 +266,7 @@ class InPaint(nn.Module):
 
         # mask out the bottom part of every image
         mask_known = torch.zeros(batch_size, C, H, W, dtype=torch.bool, device=device)
-        mask_known[:, :, :H//2, :] = 1
+        mask_known[:, :, H//2: , :] = 1
         images_known = images * mask_known
 
         samples1 = ((images_known + 1) / 2).clip(0, 1)

@@ -90,7 +90,7 @@ save_images(samples01, dataset_choice, save_dir='generated_samples', image_type 
 
 
 # Inpainting masked image
-image = test_dataset[5]  # Select one image from the test dataset
+image = test_dataset[5643]  # Select one image from the test dataset
 
 inpaint = InPaint()
 inpaint.sample(diffusion, unet, image, dataset_choice)
