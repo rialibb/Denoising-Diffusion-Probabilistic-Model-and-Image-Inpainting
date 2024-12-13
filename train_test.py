@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import OneCycleLR
@@ -7,12 +6,7 @@ import logging
 from torch.utils.data import DataLoader
 from config import device
 import numpy as np
-from pytorch_fid import fid_score
 import sys
-import os
-
-
-
 
 
 
@@ -26,8 +20,6 @@ def f_train(
     valloader: DataLoader,
     n_epochs: int = 20,
     learning_rate: float = 0.001,
-    dataset_choice: str='MNIST',
-    save_dir: str = 'saved_models'
 ):
     """Train the diffusion model to predict the noise
 
@@ -45,8 +37,6 @@ def f_train(
         number of epchs for training
     learning_rate: float
         the learning rate to use for training
-    dataset_choice: str
-        the dataset to consider to train the diffusion model
     save_dir: str
         the directory to save the model
     """
@@ -56,11 +46,6 @@ def f_train(
         format="%(message)s"
     )
     
-    # Create the folder if it doesn't exist
-    os.makedirs(save_dir, exist_ok=True)
-    # create the save path for the model
-    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_diffusion.pth')
-    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_unet.pth')
     
     # retrieve current Date/time
     date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -70,6 +55,9 @@ def f_train(
     loss_func = torch.nn.MSELoss()
     optimizer=torch.optim.Adam(unet.parameters(),lr=learning_rate)
     scheduler = OneCycleLR(optimizer,max_lr=learning_rate, epochs = n_epochs, steps_per_epoch= len(trainloader), pct_start = 0.1)
+
+    train_losses = []
+    val_losses = []
 
     # initialize parameters
     early_stopping_patience = 4
@@ -100,6 +88,7 @@ def f_train(
             scheduler.step()
             train_loss.append(loss.item())
         avg_train_loss = np.mean(train_loss)
+        train_losses.append(avg_train_loss)
         
 
         # Validation Phase
@@ -121,6 +110,7 @@ def f_train(
                 loss = loss_func(predicted_noise, epsilon)
                 val_loss.append(loss.item())
         avg_val_loss = np.mean(val_loss)
+        val_losses.append(avg_val_loss)
 
         logging.info(f"Epoch {epoch+1}/{n_epochs}, Train Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}, Last value of learning rate for this epoch: {scheduler.get_last_lr()}")
 
@@ -128,10 +118,7 @@ def f_train(
         if avg_val_loss < previous_val_loss:
             previous_val_loss = avg_val_loss
             count_no_improvement = 0
-            # Save the best model
-            torch.save(diffusion.state_dict(), save_path_diffusion)
-            torch.save(unet.state_dict(), save_path_unet)
-            print(f"Validation loss improved. Models saved")
+            print(f"Validation loss improved.")
         else:
             count_no_improvement += 1
             print(f"No improvement in validation loss for {count_no_improvement} epoch(s).")
@@ -142,8 +129,8 @@ def f_train(
             break
 
     logging.info("----------------------FINISHED TRAINING----------------------")
-    
-    
+
+    return train_losses, val_losses
     
 
     
@@ -194,3 +181,5 @@ def f_test(
 
     logging.info(f"Test Loss: {avg_test_loss:.4f}")
     logging.info("---------------------- FINISHED TESTING----------------------")
+
+    return avg_test_loss

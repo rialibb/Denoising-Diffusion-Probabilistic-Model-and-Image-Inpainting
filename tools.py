@@ -1,15 +1,8 @@
 import os
-from datetime import datetime
 from PIL import Image
 from einops import rearrange 
-from config import device
 import torch
-import numpy as np
-
-
-
-
-
+import matplotlib.pyplot as plt
 
 
 
@@ -39,3 +32,45 @@ def save_images(images, dataset_choice, save_dir='generated_samples', image_type
         Image.fromarray((image * 255).astype('uint8')).save(save_path)
 
     print(f"Image saved to {save_path}")
+
+
+
+def plot_losses(val_losses, train_losses):
+
+    epochs = list(range(1, len(train_losses) + 1))
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(epochs, train_losses, label='Train Loss', marker='o')
+    plt.plot(epochs, val_losses, label='Validation Loss', marker='o')
+
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Train and Validation Loss Over Epochs')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+    plt.show()
+
+
+
+
+
+class SaveBestModelCallback:
+    """Custom callback for saving the best model during Optuna optimization."""
+    def __init__(self):
+        self.best_val_loss = float('inf')  # Start with a very large validation loss
+
+    def __call__(self, diffusion, unet, val_loss, dataset_choice):
+        """Check if the current validation loss is the best, and if so, save the model."""
+        if val_loss < self.best_val_loss:
+            save_dir = 'saved_models'
+            os.makedirs(save_dir, exist_ok=True)
+            save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_best_diffusion.pth')
+            save_path_unet = os.path.join(save_dir, f'{dataset_choice}_best_unet.pth')
+
+            print(f"New best model found! Saving model with val_loss: {val_loss:.4f}")
+            self.best_val_loss = val_loss
+            torch.save(diffusion.state_dict(), save_path_diffusion)
+            torch.save(unet.state_dict(), save_path_unet)
+
+
+
