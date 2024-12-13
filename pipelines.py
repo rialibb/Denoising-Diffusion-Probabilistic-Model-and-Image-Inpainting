@@ -12,8 +12,17 @@ import joblib
 
 
 
-
 def load_data(dataset_choice, batch_size):
+    """
+    Loads and splits the dataset into train, validation, and test sets, and returns DataLoaders.
+
+    Args:
+        dataset_choice (str): The name of the dataset to load (e.g., 'CelebA' or other available datasets).
+        batch_size (int): The batch size for the DataLoaders.
+
+    Returns:
+        tuple: DataLoaders for train, validation, and test sets, along with the test dataset.
+    """
 
     if dataset_choice == "CelebA":
         train_dataset = DiffSet('train', dataset_choice)
@@ -51,12 +60,35 @@ def run_training_and_testing_pipeline(
     c = 10,
     save_dir: str = 'saved_models'
     ):
+    """
+    Runs the training and testing pipeline for a chosen configuration of parameters.
 
+    Args:
+        T (int): Total number of time steps for the diffusion process.
+        dataset_choice (str): Dataset to use.
+        n_epochs (int): Number of training epochs.
+        batch_size (int): Batch size for the DataLoaders.
+        lr (float): Learning rate for the optimizer.
+        scheduler (str): Beta schedule.
+        beta_min (float): Minimum beta value for the scheduler.
+        beta_max (float): Maximum beta value for the scheduler.
+        s (float): Stability constant if cosine scheduler used.
+        c (float): Scaling constant if logarithmic scheduler used.
+        save_dir (str): Directory to save the trained models.
+
+    The function performs the following steps:
+    1. Loads the specified dataset and splits it into train, validation, and test sets.
+    2. Initializes the scheduler, diffusion model, and UNet model.
+    3. Trains the models using the training and validation sets.
+    4. Tests the models using the test set.
+    5. Saves the trained models to the specified directory.
+    6. Plots training and validation loss across epochs.
+    """
 
     # Load data
     train_loader, val_loader, test_loader, test_dataset = load_data(dataset_choice, batch_size)
 
-    # Lookup table to set scheduler
+    # select scheduler
     betas = select_betas(scheduler, beta_min, beta_max, T)
 
     # Create models
@@ -83,7 +115,7 @@ def run_training_and_testing_pipeline(
     # Save best models
     torch.save(diffusion.state_dict(), save_path_diffusion)
     torch.save(unet.state_dict(), save_path_unet)
-
+    # Plot losses through epochs
     plot_losses(train_losses, val_losses)
 
 
@@ -97,6 +129,24 @@ def run_hyperparam_tuning_pipeline(
     T= 1000,
     scheduler = "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
     ):
+    """
+    Runs hyperparameter tuning using Bayesian Optimization, with Optuna.
+
+    Args:
+        dataset_choice (str): Dataset to use.
+        n_epochs (int): Number of epochs for training in each trial.
+        batch_size (int): Batch size for the DataLoaders.
+        num_trials (int): Number of trials to run for hyperparameter tuning.
+        T (int): Total number of time steps for the diffusion process.
+        scheduler (str): Beta scheduler.
+
+    The function performs the following steps:
+    1. Loads the dataset and splits it into train, validation, and test sets.
+    2. Uses Optuna to optimize hyperparameters for the learning rate, beta_min, and beta_max.
+    3. Trains a diffusion model and a UNet for each trial.
+    4. Tests the model and saves the best-performing models.
+    5. Saves the Optuna study results to a file for future reference.
+    """
 
     # Load datasets
     train_loader, val_loader, test_loader, test_dataset = load_data(dataset_choice, batch_size)
@@ -108,7 +158,6 @@ def run_hyperparam_tuning_pipeline(
         lr = trial.suggest_float('lr', 1e-5, 1e-2, log=True)
         beta_min = trial.suggest_float('beta_min', 1e-5, 0.01)
         beta_max = trial.suggest_float('beta_max', 0.01, 0.05)
-        # Set up diffusion process
         # Lookup table to set scheduler
         betas = select_betas(scheduler, beta_min, beta_max, T)
         
@@ -158,7 +207,23 @@ def run_inpainting_pipeline(
     batch_size = 128,
     beta_min = 0.0001,
     beta_max = 0.02,
-):
+    ):
+    """
+    Runs the inpainting pipeline using a diffusion model and UNet.
+
+    Args:
+        T (int): Total number of time steps for the diffusion process.
+        dataset_choice (str): Dataset to use.
+        batch_size (int): Batch size for loading the dataset.
+        beta_min (float): Minimum beta value for the linear scheduler.
+        beta_max (float): Maximum beta value for the linear scheduler.
+
+    The function performs the following steps:
+    1. Loads the test dataset for the specified dataset choice.
+    2. Initializes and loads pre-trained weights for the diffusion and UNet models.
+    3. Generates and saves a batch of sample images from the diffusion model.
+    4. Selects a single test image, performs image inpainting and then saves the inpainted result.
+    """
 
     _, _, _, test_dataset = load_data(dataset_choice, batch_size)
 
@@ -175,20 +240,18 @@ def run_inpainting_pipeline(
     diffusion.to(device)
     unet.to(device)
 
+    # Load models
     diffusion.load_state_dict(torch.load(f'saved_models/{dataset_choice}_best_diffusion.pth'))
     unet.load_state_dict(torch.load(f'saved_models/{dataset_choice}_best_unet.pth'))
     
-        
     # Sample generation
     x_shape = (25, test_dataset.depth, test_dataset.size, test_dataset.size)
     samples = diffusion.sample(unet, x_shape)
     samples01 = ((samples + 1) / 2).clip(0, 1)
     save_images(samples01, dataset_choice, save_dir='generated_samples', image_type = 'samples' , cmap='binary', ncol=5)
 
-
     # Inpainting masked image
     image = test_dataset[5643]  # Select one image from the test dataset
-
     inpaint = InPaint()
     inpaint.sample(diffusion, unet, image, dataset_choice)
 

@@ -36,6 +36,13 @@ def save_images(images, dataset_choice, save_dir='generated_samples', image_type
 
 
 def plot_losses(val_losses, train_losses):
+    """
+    Plots training and validation loss over epochs.
+
+    Args:
+        val_losses (list): Validation loss values for each epoch.
+        train_losses (list): Training loss values for each epoch.
+    """
 
     epochs = list(range(1, len(train_losses) + 1))
 
@@ -49,8 +56,6 @@ def plot_losses(val_losses, train_losses):
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.6)
     plt.show()
-
-
 
 
 

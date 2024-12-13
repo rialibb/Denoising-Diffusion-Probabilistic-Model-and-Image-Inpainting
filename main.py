@@ -4,13 +4,11 @@ from pipelines import (run_training_and_testing_pipeline,
 
 
 
-
-
-
-
-
 if __name__ == "__main__":
-
+    #
+    # Choose the pipeline you want to run and comment the rest 
+    #
+    
     run_training_and_testing_pipeline(
         T = 1000,
         dataset_choice = "MNIST",   # "MNIST", "Fashion" ,  "CIFAR" or "CelebA"

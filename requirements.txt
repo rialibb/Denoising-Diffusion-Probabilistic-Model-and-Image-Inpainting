@@ -8,5 +8,5 @@ matplotlib
 einops
 IPython
 gdown
-pytorch-lightning==
+pytorch-lightning
 pytorch_fid
