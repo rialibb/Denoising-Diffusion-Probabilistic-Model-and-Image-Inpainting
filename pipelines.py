@@ -329,4 +329,4 @@ def run_sampling_and_inpainting_pipeline(
     # Inpainting masked image
     image = test_dataset[5643]  # Select one image from the test dataset
     inpaint = InPaint()
-    inpaint.sample(diffusion, unet, image, dataset_choice)
+    inpaint.sample(diffusion, unet, image, dataset_choice, scheduler)
