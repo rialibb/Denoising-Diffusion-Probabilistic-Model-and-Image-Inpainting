@@ -134,7 +134,7 @@ def run_scheduler_tuning_pipeline(
     unets = []
     
     for scheduler in schedulers:
-        
+        print(f'Training models with {scheduler} scheduler...')
         # select scheduler
         betas = select_betas(scheduler, beta_min, beta_max, T)
 
@@ -168,6 +168,10 @@ def run_scheduler_tuning_pipeline(
     best_scheduler = schedulers[best_index]
     best_diffusion = diffusions[best_index]
     best_unet = unets[best_index]
+    
+    print(f'________ Best scheduler: {best_scheduler}__________')
+    print(f'________ Best validation loss: {best_val_losses[best_index]}__________')
+    
     # Test models
     f_test(best_diffusion, best_unet, test_loader)
     # Create the folder if it doesn't exist
@@ -219,12 +223,15 @@ def run_hyperparam_tuning_pipeline(
 
     # Load datasets
     train_loader, val_loader, _, test_dataset = load_data(dataset_choice, batch_size)
+    
+    # initialize the callback function
+    save_best_model = SaveBestModelCallback()
 
     # Objective function for Optuna
     def objective(trial):
 
         # Hyperparameters to tune
-        T = trial.suggest_float('TimeSteps', 500, 2000)
+        T = trial.suggest_int('TimeSteps', 500, 2000)
         beta_min = trial.suggest_float('beta_min', 1e-5, 1e-3, log=True)
         beta_max = trial.suggest_float('beta_max', 0.01, 0.05)
         # Lookup table to set scheduler
@@ -246,7 +253,6 @@ def run_hyperparam_tuning_pipeline(
         _, val_losses = f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
 
         # Save only best model
-        save_best_model = SaveBestModelCallback()
         save_best_model(diffusion, unet, val_losses[-1], dataset_choice, scheduler)
     
         return val_losses[-1]
@@ -310,8 +316,8 @@ def run_sampling_and_inpainting_pipeline(
     unet.to(device)
 
     # Load models
-    diffusion.load_state_dict(torch.load(f'saved_models/{dataset_choice}_best_diffusion.pth'))
-    unet.load_state_dict(torch.load(f'saved_models/{dataset_choice}_best_unet.pth'))
+    diffusion.load_state_dict(torch.load(f'saved_models/{dataset_choice}_{scheduler}_best_diffusion.pth'))
+    unet.load_state_dict(torch.load(f'saved_models/{dataset_choice}_{scheduler}_best_unet.pth'))
     
     # Sample generation
     x_shape = (25, test_dataset.depth, test_dataset.size, test_dataset.size)

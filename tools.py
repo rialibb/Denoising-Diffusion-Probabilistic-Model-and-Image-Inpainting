@@ -112,12 +112,10 @@ def plot_losses(all_train_losses, all_val_losses, schedulers, save_dir='plots'):
     # Create the directory if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
 
-    # Get the number of epochs (assuming all configurations have same epoch count)
-    epochs = list(range(1, len(all_train_losses[0]) + 1))
-
     # Plot training loss evolution for different configurations
     plt.figure(figsize=(10, 6))
     for scheduler, train_losses in zip(schedulers, all_train_losses):
+        epochs = list(range(1, len(train_losses) + 1))
         plt.plot(epochs, train_losses, label=f'{scheduler} scheduler', marker='o')
 
     plt.xlabel('Epochs')
@@ -135,6 +133,7 @@ def plot_losses(all_train_losses, all_val_losses, schedulers, save_dir='plots'):
     # Plot validation loss evolution for different configurations
     plt.figure(figsize=(10, 6))
     for scheduler, val_losses in zip(schedulers, all_val_losses):
+        epochs = list(range(1, len(val_losses) + 1))
         plt.plot(epochs, val_losses, label=f'{scheduler} scheduler', marker='o')
 
     plt.xlabel('Epochs')
