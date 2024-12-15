@@ -1,9 +1,7 @@
 import torch
 import torch.nn as nn
-import pytorch_lightning as pl
 from .blocks import ResidualBlock, Downsample, Upsample, PositionalEmbedding
 from config import device
-import numpy as np
 from tools import save_images
 
 
@@ -67,7 +65,7 @@ class Diffusion(nn.Module):
           betas of shape (num_timesteps,): corruption rate
           shape : the shape of the batch [batch_size, C, H, W]
         Return: 
-          a matrix correspond to the value of alpha bar for every observaion in the batch
+          a matrix correspond to the value of alpha bar for every observation in the batch
         """
         a=torch.cumprod(1-betas,dim=0).to(device)
         L = torch.zeros(shape).to(device)
@@ -221,8 +219,6 @@ class InPaint(nn.Module):
         Returns:
           x of shape (batch_size, n_channels, H, W): Generated samples (one sample per input image).
         """
-        # YOUR CODE HERE
-        
         
         x_shape = images.shape
         x_t = torch.randn(x_shape).to(device)     

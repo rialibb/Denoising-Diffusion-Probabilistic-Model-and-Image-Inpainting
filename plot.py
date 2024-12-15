@@ -1,6 +1,12 @@
-from schedules.schedules import linear_schedule, cosine_schedule, quadratic_schedule, exponential_schedule, logarithmic_schedule
+from schedules.schedules import (linear_schedule, 
+                                 cosine_schedule, 
+                                 quadratic_schedule, 
+                                 exponential_schedule, 
+                                 logarithmic_schedule)
 import matplotlib.pyplot as plt
 import numpy as np
+
+
 
 
 
