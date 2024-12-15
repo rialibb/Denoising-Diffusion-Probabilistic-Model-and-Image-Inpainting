@@ -270,7 +270,7 @@ def run_hyperparam_tuning_pipeline(
 
     # Save the study results in a file for later use
     os.makedirs(f'hyperparam_tuning/{scheduler}', exist_ok=True)
-    joblib.dump(study, f'hyperparam_tuning/{scheduler}/optuna_study.pkl')
+    joblib.dump(study, f'hyperparam_tuning/{scheduler}/{dataset_choice}_optuna_study.pkl')
 
 
 
@@ -299,7 +299,7 @@ def run_sampling_and_inpainting_pipeline(
     4. Selects a single test image, performs image inpainting and then saves the inpainted result.
     """
     
-    study_path = f'hyperparam_tuning/{scheduler}/optuna_study.pkl'
+    study_path = f'hyperparam_tuning/{scheduler}/{dataset_choice}_optuna_study.pkl'
     
     # Check if the file exists
     if not os.path.exists(study_path):
