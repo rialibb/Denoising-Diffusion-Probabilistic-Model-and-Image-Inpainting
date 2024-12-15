@@ -196,7 +196,6 @@ def run_hyperparam_tuning_pipeline(
     batch_size = 128,
     num_trials = 5,
     lr = 0.001,
-    T= 1000,
     scheduler = "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
     ):
     """
@@ -208,7 +207,6 @@ def run_hyperparam_tuning_pipeline(
         batch_size (int): Batch size for the DataLoaders.
         num_trials (int): Number of trials to run for hyperparameter tuning.
         lr (float) : Learning rate for the optimizer.
-        T (int): Total number of time steps for the diffusion process.
         scheduler (str): Beta scheduler.
 
     The function performs the following steps:
@@ -226,6 +224,7 @@ def run_hyperparam_tuning_pipeline(
     def objective(trial):
 
         # Hyperparameters to tune
+        T = trial.suggest_float('TimeSteps', 500, 2000)
         beta_min = trial.suggest_float('beta_min', 1e-5, 1e-3, log=True)
         beta_max = trial.suggest_float('beta_max', 0.01, 0.05)
         # Lookup table to set scheduler

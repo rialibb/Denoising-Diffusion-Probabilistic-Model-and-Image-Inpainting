@@ -105,6 +105,7 @@ def plot_losses(all_train_losses, all_val_losses, schedulers, save_dir='plots'):
     Args:
         all_train_losses (list of lists): Training losses for multiple configurations.
         all_val_losses (list of lists): Validation losses for multiple configurations.
+        schedulers (list of str): different types of schedulers
         save_dir (str): Directory where plots will be saved.
     """
 
