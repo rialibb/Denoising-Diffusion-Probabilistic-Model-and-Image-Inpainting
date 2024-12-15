@@ -283,7 +283,7 @@ class InPaint(nn.Module):
         images = images.to(device)
         (batch_size, C, H, W) = images.shape
         samples0 = ((images + 1) / 2).clip(0, 1)
-        save_images(samples0, dataset_choice, save_dir='Inpaint_images/{scheduler}', image_type = 'original_image' , cmap='binary', ncol=5)
+        save_images(samples0, dataset_choice, save_dir=f'Inpaint_images/{scheduler}', image_type = 'original_image' , cmap='binary', ncol=5)
 
         # mask out the bottom part of every image
         mask_known = torch.zeros(batch_size, C, H, W, dtype=torch.bool, device=device)
@@ -291,9 +291,9 @@ class InPaint(nn.Module):
         images_known = images * mask_known
 
         samples1 = ((images_known + 1) / 2).clip(0, 1)
-        save_images(samples1, dataset_choice, save_dir='Inpaint_images/{scheduler}', image_type = 'masked_image' , cmap='binary', ncol=5)
+        save_images(samples1, dataset_choice, save_dir=f'Inpaint_images/{scheduler}', image_type = 'masked_image' , cmap='binary', ncol=5)
 
         samples = self.forward(diffusion, model, images_known, mask_known, labels=None)
         samples2 = ((samples + 1) / 2).clip(0, 1)
-        save_images(samples2, dataset_choice, save_dir='Inpaint_images/{scheduler}', image_type = 'inpaint_image_image' , cmap='binary', ncol=5)
+        save_images(samples2, dataset_choice, save_dir=f'Inpaint_images/{scheduler}', image_type = 'inpaint_image_image' , cmap='binary', ncol=5)
         
