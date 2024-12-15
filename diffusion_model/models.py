@@ -295,5 +295,5 @@ class InPaint(nn.Module):
 
         samples = self.forward(diffusion, model, images_known, mask_known, labels=None)
         samples2 = ((samples + 1) / 2).clip(0, 1)
-        save_images(samples2, dataset_choice, save_dir=f'Inpaint_images/{scheduler}', image_type = 'inpaint_image_image' , cmap='binary', ncol=5)
+        save_images(samples2, dataset_choice, save_dir=f'Inpaint_images/{scheduler}', image_type = 'inpaint_image' , cmap='binary', ncol=5)
         
