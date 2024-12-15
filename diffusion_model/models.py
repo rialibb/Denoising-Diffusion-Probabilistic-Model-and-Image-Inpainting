@@ -206,7 +206,7 @@ class InPaint(nn.Module):
         super().__init__()
       
       
-    def forward(self, diffusion, model, images, mask_known, labels=None):
+    def forward(self, diffusion, model, images, mask_known, U=10, labels=None):
         """Generate samples conditioned on known parts of images.
         
         Args:
@@ -226,27 +226,36 @@ class InPaint(nn.Module):
         with torch.no_grad() :
           
             for t in range(diffusion.num_timesteps,0,-1):
+              
+                for u in range(U):  # Refinement steps
 
-                # define epsilon here
-                if t>1 :
-                    epsilon=torch.randn(x_shape).to(device) 
-                else :
-                    epsilon=0
-                # Update known pixels with noise
-                alpha=torch.prod(1-diffusion.betas[:t])*torch.ones(x_shape[1:], device=device)
-                x_t_minus1_known = torch.sqrt(alpha)*images+(1-alpha)*epsilon
+                    # define epsilon here
+                    if t>1 :
+                        epsilon=torch.randn(x_shape).to(device) 
+                    else :
+                        epsilon=0
+                    # Update known pixels with noise
+                    alpha=torch.prod(1-diffusion.betas[:t])*torch.ones(x_shape[1:], device=device)
+                    x_t_minus1_known = torch.sqrt(alpha)*images+(1-alpha)*epsilon
 
-                # define z here
-                if t>1 :
-                    z=torch.randn(x_shape).to(device)  
-                else :
-                    z=0    
-                
-                Ti=torch.ones(x_shape[0],device=device)*t
-                #update unkown pixels with
-                x_t_minus1_unknown = (1/(torch.sqrt(1-diffusion.betas[t-1]))) * (x_t - (diffusion.betas[t-1])*model(x_t,Ti) / torch.sqrt(1-alpha))+torch.sqrt(diffusion.betas[t-1])*z
-                
-                x_t = x_t_minus1_known * mask_known +  x_t_minus1_unknown *  (~mask_known)
+                    # define z here
+                    if t>1 :
+                        z=torch.randn(x_shape).to(device)  
+                    else :
+                        z=0    
+                    
+                    Ti=torch.ones(x_shape[0],device=device)*t
+                    #update unkown pixels with
+                    x_t_minus1_unknown = (1/(torch.sqrt(1-diffusion.betas[t-1]))) * (x_t - (diffusion.betas[t-1])*model(x_t,Ti) / torch.sqrt(1-alpha))+torch.sqrt(diffusion.betas[t-1])*z
+                    
+                    x_t_minus_1 = x_t_minus1_known * mask_known +  x_t_minus1_unknown *  (~mask_known)
+                    
+                    
+                    if u < U - 1 and t > 1:
+                        noise = torch.randn(x_shape).to(device)
+                        x_t = torch.sqrt(1-diffusion.betas[t-1]) * x_t_minus_1 + diffusion.betas[t-1].sqrt() * noise
+                    else:
+                        x_t = x_t_minus_1  # Update x_t
 
         # Returnx_0
         return x_t    
