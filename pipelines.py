@@ -67,10 +67,11 @@ def run_training_and_testing_pipeline(
     unet.to(device)
 
     # Create the folder if it doesn't exist
+    save_dir = os.path.join(save_dir, scheduler)
     os.makedirs(save_dir, exist_ok=True)
     # create the save path for the model
-    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_{scheduler}_diffusion.pth')
-    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_{scheduler}_unet.pth')
+    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_diffusion.pth')
+    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_unet.pth')
 
     # Train models
     train_losses, val_losses = f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
@@ -158,7 +159,6 @@ def run_scheduler_tuning_pipeline(
         # add models
         diffusions.append(diffusion)
         unets.append(unet)
-        # Plot losses through epochs
         
     #plot different losses
     plot_losses(all_train_losses, all_val_losses, schedulers)
@@ -175,10 +175,11 @@ def run_scheduler_tuning_pipeline(
     # Test models
     f_test(best_diffusion, best_unet, test_loader)
     # Create the folder if it doesn't exist
+    save_dir = os.path.join(save_dir, best_scheduler)
     os.makedirs(save_dir, exist_ok=True)
     # create the save path for the model
-    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_{best_scheduler}_diffusion.pth')
-    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_{best_scheduler}_unet.pth')
+    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_diffusion.pth')
+    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_unet.pth')
     # Save best models
     torch.save(best_diffusion.state_dict(), save_path_diffusion)
     torch.save(best_unet.state_dict(), save_path_unet)
@@ -316,14 +317,14 @@ def run_sampling_and_inpainting_pipeline(
     unet.to(device)
 
     # Load models
-    diffusion.load_state_dict(torch.load(f'saved_models/{dataset_choice}_{scheduler}_best_diffusion.pth'))
-    unet.load_state_dict(torch.load(f'saved_models/{dataset_choice}_{scheduler}_best_unet.pth'))
+    diffusion.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_diffusion.pth'))
+    unet.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_unet.pth'))
     
     # Sample generation
     x_shape = (25, test_dataset.depth, test_dataset.size, test_dataset.size)
     samples = diffusion.sample(unet, x_shape)
     samples01 = ((samples + 1) / 2).clip(0, 1)
-    save_images(samples01, dataset_choice, save_dir='generated_samples', image_type = 'samples' , cmap='binary', ncol=5)
+    save_images(samples01, dataset_choice, save_dir=f'generated_samples/{scheduler}', image_type = 'samples' , cmap='binary', ncol=5)
 
     # Inpainting masked image
     image = test_dataset[5643]  # Select one image from the test dataset

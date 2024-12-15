@@ -165,9 +165,10 @@ class SaveBestModelCallback:
         """Check if the current validation loss is the best, and if so, save the model."""
         if val_loss < self.best_val_loss:
             save_dir = 'saved_models'
+            save_dir = os.path.join(save_dir, scheduler)
             os.makedirs(save_dir, exist_ok=True)
-            save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_{scheduler}_best_diffusion.pth')
-            save_path_unet = os.path.join(save_dir, f'{dataset_choice}_{scheduler}_best_unet.pth')
+            save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_best_diffusion.pth')
+            save_path_unet = os.path.join(save_dir, f'{dataset_choice}_best_unet.pth')
 
             print(f"New best model found! Saving model with val_loss: {val_loss:.4f}")
             self.best_val_loss = val_loss
