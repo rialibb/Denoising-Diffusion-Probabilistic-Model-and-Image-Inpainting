@@ -181,5 +181,3 @@ def f_test(
 
     logging.info(f"Test Loss: {avg_test_loss:.4f}")
     logging.info("---------------------- FINISHED TESTING----------------------")
-
-    return avg_test_loss

@@ -1,4 +1,4 @@
-from schedules.schedules import (linear_schedule, 
+from .schedules import (linear_schedule, 
                                  cosine_schedule, 
                                  quadratic_schedule, 
                                  exponential_schedule, 
@@ -32,7 +32,7 @@ plt.ylabel('value')
 
 
 plt.legend()
-plt.savefig('Schedules_plot.png', dpi=300)
+plt.savefig('schedules/Schedules_plot.png', dpi=300)
 plt.show()
 
 # I tested the validation mse for these 5 schedules, I found that the best validation is ordered in the same way as the curve (val_mse_log < val_mse_linear < quadratic < expo < <cosine )

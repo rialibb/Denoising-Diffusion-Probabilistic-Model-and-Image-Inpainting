@@ -254,6 +254,22 @@ class InPaint(nn.Module):
     
     def sample(self, diffusion, model, image, dataset_choice):
       
+        """Generate samples conditioned on known parts of images.
+        
+        Args:
+          diffusion (Diffusion): The descriptor of a diffusion model.
+          model: A denoising model: model(x, t, labels) outputs a denoised version of input x.
+          images of shape (batch_size, n_channels, H, W): Conditioning images.
+          daatset_choice (str): The dataset to sample from.
+        
+        This method will perform the following steps:
+        1. Create a batch with the selected inout image 
+        2. Create a mask with the known pixels of the input image
+        3. Create a tensor with the known and unknown pixels of the input image
+        4. inpaint bthe unknown part based on the forward method
+        5. Save original, masked and inpaint images in the corresponding folder
+        """
+      
         images = image[None, ...].tile(25, 1, 1, 1)  # Copy the image to generate multiple samples
         images = images.to(device)
         (batch_size, C, H, W) = images.shape

@@ -1,48 +1,13 @@
 import torch
-from dataset import DiffSet
-from schedules.schedules import linear_schedule, select_betas
-from torch.utils.data import DataLoader, random_split
+from schedules.schedules import select_betas
 from diffusion_model import Diffusion, UNet, InPaint
 from train_test import f_train, f_test
 from config import device
-from tools import save_images, plot_losses, SaveBestModelCallback
+from tools import load_data, save_images, plot_losses, SaveBestModelCallback
 import optuna
 import os
 import joblib
 
-
-
-def load_data(dataset_choice, batch_size):
-    """
-    Loads and splits the dataset into train, validation, and test sets, and returns DataLoaders.
-
-    Args:
-        dataset_choice (str): The name of the dataset to load (e.g., 'CelebA' or other available datasets).
-        batch_size (int): The batch size for the DataLoaders.
-
-    Returns:
-        tuple: DataLoaders for train, validation, and test sets, along with the test dataset.
-    """
-
-    if dataset_choice == "CelebA":
-        train_dataset = DiffSet('train', dataset_choice)
-        val_dataset = DiffSet('valid', dataset_choice)
-        test_dataset = DiffSet('test', dataset_choice)
-        
-    else:
-        train_val_dataset = DiffSet(True, dataset_choice)
-        test_dataset = DiffSet(False, dataset_choice)
-
-        train_size = int(0.8 * len(train_val_dataset))
-        val_size = len(train_val_dataset) - train_size
-        train_dataset, val_dataset = random_split(train_val_dataset, [train_size, val_size])
-
-    # dataloaders
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
-
-    return train_loader, val_loader, test_loader, test_dataset
 
 
 
@@ -56,8 +21,6 @@ def run_training_and_testing_pipeline(
     scheduler = "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
     beta_min = 0.0001,
     beta_max = 0.02,
-    s = 0.008,
-    c = 10,
     save_dir: str = 'saved_models'
     ):
     """
@@ -105,13 +68,13 @@ def run_training_and_testing_pipeline(
     # Create the folder if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
     # create the save path for the model
-    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_diffusion.pth')
-    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_unet.pth')
+    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_{scheduler}_diffusion.pth')
+    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_{scheduler}_unet.pth')
 
     # Train models
     train_losses, val_losses = f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
     # Test models
-    test_loss = f_test(diffusion, unet, test_loader)
+    f_test(diffusion, unet, test_loader)
     # Save best models
     torch.save(diffusion.state_dict(), save_path_diffusion)
     torch.save(unet.state_dict(), save_path_unet)
@@ -121,11 +84,14 @@ def run_training_and_testing_pipeline(
 
 
 
+
+
 def run_hyperparam_tuning_pipeline(
     dataset_choice = "MNIST",   # "MNIST", "Fashion" ,  "CIFAR" or "CelebA"
     n_epochs = 15,
     batch_size = 128,
     num_trials = 5,
+    lr = 0.001,
     T= 1000,
     scheduler = "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
     ):
@@ -137,6 +103,7 @@ def run_hyperparam_tuning_pipeline(
         n_epochs (int): Number of epochs for training in each trial.
         batch_size (int): Batch size for the DataLoaders.
         num_trials (int): Number of trials to run for hyperparameter tuning.
+        lr (float) : Learning rate for the optimizer.
         T (int): Total number of time steps for the diffusion process.
         scheduler (str): Beta scheduler.
 
@@ -149,14 +116,13 @@ def run_hyperparam_tuning_pipeline(
     """
 
     # Load datasets
-    train_loader, val_loader, test_loader, test_dataset = load_data(dataset_choice, batch_size)
+    train_loader, val_loader, _, test_dataset = load_data(dataset_choice, batch_size)
 
     # Objective function for Optuna
     def objective(trial):
 
         # Hyperparameters to tune
-        lr = trial.suggest_float('lr', 1e-5, 1e-2, log=True)
-        beta_min = trial.suggest_float('beta_min', 1e-5, 0.01)
+        beta_min = trial.suggest_float('beta_min', 1e-5, 1e-3, log=True)
         beta_max = trial.suggest_float('beta_max', 0.01, 0.05)
         # Lookup table to set scheduler
         betas = select_betas(scheduler, beta_min, beta_max, T)
@@ -174,14 +140,11 @@ def run_hyperparam_tuning_pipeline(
         unet.to(device)
 
         # Train the model
-        train_losses, val_losses = f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
-        
-        # Test the model
-        test_loss = f_test(diffusion, unet, test_loader)
+        _, val_losses = f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
 
         # Save only best model
         save_best_model = SaveBestModelCallback()
-        save_best_model(diffusion, unet, val_losses[-1], dataset_choice)
+        save_best_model(diffusion, unet, val_losses[-1], dataset_choice, scheduler)
     
         return val_losses[-1]
     
@@ -201,12 +164,15 @@ def run_hyperparam_tuning_pipeline(
 
 
 
-def run_inpainting_pipeline(
+
+
+def run_sampling_and_inpainting_pipeline(
     T = 1000,
     dataset_choice = "MNIST",   # "MNIST", "Fashion" ,  "CIFAR" or "CelebA"
     batch_size = 128,
     beta_min = 0.0001,
     beta_max = 0.02,
+    scheduler =  "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
     ):
     """
     Runs the inpainting pipeline using a diffusion model and UNet.
@@ -227,7 +193,7 @@ def run_inpainting_pipeline(
 
     _, _, _, test_dataset = load_data(dataset_choice, batch_size)
 
-    betas = linear_schedule(beta_min, beta_max, T)
+    betas = select_betas(scheduler, beta_min, beta_max, T)
 
     # Create models
     diffusion = Diffusion(betas, T)
@@ -254,43 +220,3 @@ def run_inpainting_pipeline(
     image = test_dataset[5643]  # Select one image from the test dataset
     inpaint = InPaint()
     inpaint.sample(diffusion, unet, image, dataset_choice)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
