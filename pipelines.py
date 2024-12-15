@@ -7,6 +7,7 @@ from tools import load_data, save_images, plot_losses, SaveBestModelCallback
 import optuna
 import os
 import joblib
+import numpy as np
 
 
 
@@ -78,10 +79,113 @@ def run_training_and_testing_pipeline(
     # Save best models
     torch.save(diffusion.state_dict(), save_path_diffusion)
     torch.save(unet.state_dict(), save_path_unet)
-    # Plot losses through epochs
-    plot_losses(train_losses, val_losses)
 
 
+
+
+
+
+
+
+
+def run_scheduler_tuning_pipeline(
+    T = 1000,
+    dataset_choice = "MNIST",   # "MNIST", "Fashion" ,  "CIFAR" or "CelebA"
+    n_epochs = 20,
+    batch_size = 128,
+    lr = 0.001,
+    beta_min = 0.0001,
+    beta_max = 0.02,
+    save_dir: str = 'saved_models'
+    ):
+    """
+    Find the best scheduler for the given dataset and model architecture.
+
+    Args:
+        T (int): Total number of time steps for the diffusion process.
+        dataset_choice (str): Dataset to use.
+        n_epochs (int): Number of training epochs.
+        batch_size (int): Batch size for the DataLoaders.
+        lr (float): Learning rate for the optimizer.
+        beta_min (float): Minimum beta value for the scheduler.
+        beta_max (float): Maximum beta value for the scheduler.
+        save_dir (str): Directory to save the trained models.
+
+    The function performs the following steps:
+    1. Loads the specified dataset and splits it into train, validation, and test sets.
+    2. Initializes the scheduler, diffusion model, and UNet model.
+    3. Trains the models using the training and validation sets based on different schedulers
+    4. Tests the best model using the test set.
+    5. Saves the best trained model to the specified directory.
+    6. Plots training and validation loss across epochs.
+    """
+
+    # define the different schedulers :
+    schedulers = ['linear', 'cosine', 'quadratic', 'exponential', 'logarithmic']
+    # Load data
+    train_loader, val_loader, test_loader, test_dataset = load_data(dataset_choice, batch_size)
+    
+    # initialize the losses
+    all_train_losses, all_val_losses = [], []
+
+    # train models with different schedulers
+    best_val_losses = []
+    diffusions =[]
+    unets = []
+    
+    for scheduler in schedulers:
+        
+        # select scheduler
+        betas = select_betas(scheduler, beta_min, beta_max, T)
+
+        # Create models
+        diffusion = Diffusion(betas, T)
+        unet = UNet(
+            img_channels = test_dataset.depth,
+            base_channels = test_dataset.size,
+            time_emb_dim = test_dataset.size,
+            num_classes = None,
+        )
+        diffusion.to(device)
+        unet.to(device)
+        
+        # Train models
+        train_losses, val_losses = f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
+        # add losses
+        all_train_losses.append(train_losses)
+        all_val_losses.append(val_losses)
+        best_val_losses.append(val_losses[-1])
+        # add models
+        diffusions.append(diffusion)
+        unets.append(unet)
+        # Plot losses through epochs
+        
+    #plot different losses
+    plot_losses(all_train_losses, all_val_losses, schedulers)
+
+    #find best scheduler
+    best_index = np.argmin(best_val_losses)
+    best_scheduler = schedulers[best_index]
+    best_diffusion = diffusions[best_index]
+    best_unet = unets[best_index]
+    # Test models
+    f_test(best_diffusion, best_unet, test_loader)
+    # Create the folder if it doesn't exist
+    os.makedirs(save_dir, exist_ok=True)
+    # create the save path for the model
+    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_{best_scheduler}_diffusion.pth')
+    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_{best_scheduler}_unet.pth')
+    # Save best models
+    torch.save(best_diffusion.state_dict(), save_path_diffusion)
+    torch.save(best_unet.state_dict(), save_path_unet)
+
+    
+    
+    
+    
+    
+    
+    
 
 
 

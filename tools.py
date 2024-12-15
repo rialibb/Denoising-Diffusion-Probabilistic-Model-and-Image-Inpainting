@@ -50,15 +50,18 @@ def load_data(dataset_choice, batch_size):
 
 
 
-def save_images(images, dataset_choice, save_dir='generated_samples', image_type = 'samples', ncol=5, **kwargs):
+
+def save_images(images, dataset_choice, save_dir='generated_samples', image_type='samples', ncol=5, scale_factor=2, **kwargs):
     """
-    Save generated images to a folder instead of displaying them.
+    Save generated images to a folder with increased resolution.
 
     Args:
         images (torch.Tensor): Generated images in tensor format.
         save_dir (str): Directory to save the images.
-        image_type(str): whether the original image, the masked image or the generated image
+        dataset_choice (str): Name of the dataset being processed.
+        image_type (str): Type of image ('samples', 'masked', etc.).
         ncol (int): Number of columns for arranging images in a grid.
+        scale_factor (int): Factor by which to upscale the image resolution.
     """
     # Create the folder if it doesn't exist
     os.makedirs(save_dir, exist_ok=True)
@@ -68,14 +71,24 @@ def save_images(images, dataset_choice, save_dir='generated_samples', image_type
 
     # Rearrange the images into a grid
     out = rearrange(images, '(b1 b2) c h w -> c (b1 h) (b2 w)', b2=ncol).cpu()
-    if out.shape[0] == 1:
-        image = out[0].numpy()  # For grayscale images
-        Image.fromarray((image * 255).astype('uint8')).save(save_path)
-    else:
-        image = out.permute((1, 2, 0)).numpy()  # For RGB images
-        Image.fromarray((image * 255).astype('uint8')).save(save_path)
+    
+    # Convert the tensor to a NumPy array and upscale
+    if out.shape[0] == 1:  # For grayscale images
+        image = out[0].numpy()  # Extract grayscale channel
+        image = Image.fromarray((image * 255).astype('uint8'))
+    else:  # For RGB images
+        image = out.permute((1, 2, 0)).numpy()
+        image = Image.fromarray((image * 255).astype('uint8'))
+    
+    # Resize image to increase resolution
+    width, height = image.size
+    new_size = (width * scale_factor, height * scale_factor)  # Scale dimensions
+    image = image.resize(new_size, resample=Image.Resampling.LANCZOS)
+    
+    # Save the upscaled image
+    image.save(save_path)
+    print(f"Image saved to {save_path} with resolution {new_size}")
 
-    print(f"Image saved to {save_path}")
 
 
 
@@ -83,28 +96,58 @@ def save_images(images, dataset_choice, save_dir='generated_samples', image_type
 
 
 
-
-def plot_losses(val_losses, train_losses):
+def plot_losses(all_train_losses, all_val_losses, schedulers, save_dir='plots'):
     """
-    Plots training and validation loss over epochs.
+    Saves two plots: 
+    1. Training loss evolution for different configurations.
+    2. Validation loss evolution for different configurations.
 
     Args:
-        val_losses (list): Validation loss values for each epoch.
-        train_losses (list): Training loss values for each epoch.
+        all_train_losses (list of lists): Training losses for multiple configurations.
+        all_val_losses (list of lists): Validation losses for multiple configurations.
+        save_dir (str): Directory where plots will be saved.
     """
 
-    epochs = list(range(1, len(train_losses) + 1))
+    # Create the directory if it doesn't exist
+    os.makedirs(save_dir, exist_ok=True)
 
+    # Get the number of epochs (assuming all configurations have same epoch count)
+    epochs = list(range(1, len(all_train_losses[0]) + 1))
+
+    # Plot training loss evolution for different configurations
     plt.figure(figsize=(10, 6))
-    plt.plot(epochs, train_losses, label='Train Loss', marker='o')
-    plt.plot(epochs, val_losses, label='Validation Loss', marker='o')
+    for scheduler, train_losses in zip(schedulers, all_train_losses):
+        plt.plot(epochs, train_losses, label=f'{scheduler} scheduler', marker='o')
 
     plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.title('Train and Validation Loss Over Epochs')
+    plt.ylabel('Training Loss')
+    plt.title('Training Loss Evolution for Different Schedulers')
     plt.legend()
     plt.grid(True, linestyle='--', alpha=0.6)
-    plt.show()
+
+    # Save the training loss plot
+    train_loss_path = os.path.join(save_dir, 'training_loss_evolution.png')
+    plt.savefig(train_loss_path)
+    plt.close()  # Close the figure to avoid overlap in subsequent plots
+    print(f"Training loss plot saved to {train_loss_path}")
+
+    # Plot validation loss evolution for different configurations
+    plt.figure(figsize=(10, 6))
+    for scheduler, val_losses in zip(schedulers, all_val_losses):
+        plt.plot(epochs, val_losses, label=f'{scheduler} scheduler', marker='o')
+
+    plt.xlabel('Epochs')
+    plt.ylabel('Validation Loss')
+    plt.title('Validation Loss Evolution for Different Configurations')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+
+    # Save the validation loss plot
+    val_loss_path = os.path.join(save_dir, 'validation_loss_evolution.png')
+    plt.savefig(val_loss_path)
+    plt.close()
+    print(f"Validation loss plot saved to {val_loss_path}")
+
 
 
 
