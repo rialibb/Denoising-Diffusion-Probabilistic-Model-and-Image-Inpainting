@@ -277,28 +277,25 @@ def run_hyperparam_tuning_pipeline(
 
 
 
-def run_sampling_and_inpainting_pipeline(
+def run_sampling_pipeline(
     dataset_choice = "MNIST",   # "MNIST", "Fashion" ,  "CIFAR" or "CelebA"
     batch_size = 128,
     scheduler =  "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
     ):
     """
-    Runs the inpainting pipeline using a diffusion model and UNet.
+    Runs the sampling pipeline using a diffusion model and UNet.
 
     Args:
-        T (int): Total number of time steps for the diffusion process.
         dataset_choice (str): Dataset to use.
         batch_size (int): Batch size for loading the dataset.
-        beta_min (float): Minimum beta value for the linear scheduler.
-        beta_max (float): Maximum beta value for the linear scheduler.
+        scheduler (str): Beta scheduler.
 
     The function performs the following steps:
     1. Loads the test dataset for the specified dataset choice.
     2. Initializes and loads pre-trained weights for the diffusion and UNet models.
     3. Generates and saves a batch of sample images from the diffusion model.
-    4. Selects a single test image, performs image inpainting and then saves the inpainted result.
     """
-    
+    # load best hyperparameters
     study_path = f'hyperparam_tuning/{scheduler}/{dataset_choice}_optuna_study.pkl'
     
     # Check if the file exists
@@ -338,8 +335,72 @@ def run_sampling_and_inpainting_pipeline(
     samples = diffusion.sample(unet, x_shape)
     samples01 = ((samples + 1) / 2).clip(0, 1)
     save_images(samples01, dataset_choice, save_dir=f'generated_samples/{scheduler}', image_type = 'samples' , cmap='binary', ncol=5)
+    
+    
+    
+    
+
+
+
+
+
+
+def run_inpainting_pipeline(
+    dataset_choice = "MNIST",   # "MNIST", "Fashion" ,  "CIFAR" or "CelebA"
+    batch_size = 128,
+    scheduler =  "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
+    image_index = 5643
+    ):
+    """
+    Runs the inpainting pipeline using a diffusion model and UNet.
+
+    Args:
+        dataset_choice (str): Dataset to use.
+        batch_size (int): Batch size for loading the dataset.
+        scheduler (str): Beta scheduler.
+        image_index (int): an index of an image from test set to inpaint
+
+    The function performs the following steps:
+    1. Loads the test dataset for the specified dataset choice.
+    2. Initializes and loads pre-trained weights for the diffusion and UNet models.
+    3. Selects a single test image, performs image inpainting and then saves the inpainted result.
+    """
+    # load best hyperparameters
+    study_path = f'hyperparam_tuning/{scheduler}/{dataset_choice}_optuna_study.pkl'
+    
+    # Check if the file exists
+    if not os.path.exists(study_path):
+        raise FileNotFoundError(f"Optuna study file not found: {study_path}")
+    
+    study = joblib.load(study_path)
+    
+    best_params = study.best_trial.params
+
+    # Assign parameters to variables
+    T = best_params['TimeSteps']
+    beta_min = best_params['beta_min']
+    beta_max = best_params['beta_max']
+
+    _, _, _, test_dataset = load_data(dataset_choice, batch_size)
+
+    betas = select_betas(scheduler, beta_min, beta_max, T)
+
+    # Create models
+    diffusion = Diffusion(betas, T)
+    unet = UNet(
+        img_channels = test_dataset.depth,
+        base_channels = test_dataset.size,
+        time_emb_dim = test_dataset.size,
+        num_classes = None,
+    )
+    diffusion.to(device)
+    unet.to(device)
+
+    # Load models
+    diffusion.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_diffusion.pth'))
+    unet.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_unet.pth'))
 
     # Inpainting masked image
-    image = test_dataset[5643]  # Select one image from the test dataset
+    image = test_dataset[image_index]  # Select one image from the test dataset
     inpaint = InPaint()
     inpaint.sample(diffusion, unet, image, dataset_choice, scheduler)
