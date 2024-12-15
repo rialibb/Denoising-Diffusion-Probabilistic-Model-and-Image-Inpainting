@@ -10,3 +10,5 @@ IPython
 gdown
 pytorch-lightning
 pytorch_fid
+optuna
+joblib
