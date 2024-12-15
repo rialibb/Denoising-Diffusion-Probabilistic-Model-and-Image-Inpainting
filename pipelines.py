@@ -134,7 +134,7 @@ def run_scheduler_tuning_pipeline(
     unets = []
     
     for scheduler in schedulers:
-        
+        print(f'Training models with {scheduler} scheduler...')
         # select scheduler
         betas = select_betas(scheduler, beta_min, beta_max, T)
 
@@ -168,6 +168,10 @@ def run_scheduler_tuning_pipeline(
     best_scheduler = schedulers[best_index]
     best_diffusion = diffusions[best_index]
     best_unet = unets[best_index]
+    
+    print(f'________ Best scheduler: {best_scheduler}__________')
+    print(f'________ Best validation loss: {best_val_losses[best_index]}__________')
+    
     # Test models
     f_test(best_diffusion, best_unet, test_loader)
     # Create the folder if it doesn't exist
