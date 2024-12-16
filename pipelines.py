@@ -285,7 +285,7 @@ def run_hyperparam_tuning_pipeline(
         _, val_losses = f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
 
         # Save only best model
-        save_best_model(diffusion, unet, val_losses[-1], dataset_choice, scheduler)
+        save_best_model(diffusion, unet, val_losses[-1], dataset_choice, scheduler, comp, model)
     
         return val_losses[-1]
     
@@ -381,7 +381,7 @@ def run_sampling_pipeline(
     x_shape = (25, test_dataset.depth, test_dataset.size, test_dataset.size)
     samples = diffusion.sample(unet, x_shape)
     samples01 = ((samples + 1) / 2).clip(0, 1)
-    save_images(samples01, dataset_choice, save_dir=f'generated_samples/{scheduler}', image_type = 'samples' , cmap='binary', ncol=5)
+    save_images(samples01, dataset_choice, save_dir=f'generated_samples/{scheduler}', image_type = 'samples' , cmap='binary', comp =comp, ncol=5)
     
     
     
@@ -462,4 +462,4 @@ def run_inpainting_pipeline(
     # Inpainting masked image
     image = test_dataset[image_index]  # Select one image from the test dataset
     inpaint = InPaint()
-    inpaint.sample(diffusion, unet, image, dataset_choice, scheduler)
+    inpaint.sample(diffusion, unet, image, dataset_choice, scheduler, comp)
