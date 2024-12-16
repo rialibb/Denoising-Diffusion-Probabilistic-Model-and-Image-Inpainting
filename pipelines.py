@@ -1,6 +1,6 @@
 import torch
 from schedules.schedules import select_betas
-from diffusion_model import Diffusion, UNet, UNET_with_attention, InPaint
+from diffusion_model import Diffusion, UNet, UNet_with_attention, InPaint
 from train_test import f_train, f_test
 from config import device
 from tools import load_data, save_images, plot_losses, SaveBestModelCallback
@@ -66,7 +66,7 @@ def run_training_and_testing_pipeline(
         )
         comp = "no_attention"
     elif model == "unet_with_attention":
-        unet = UNET_with_attention(
+        unet = UNet_with_attention(
             img_channels = test_dataset.depth,
             base_channels = test_dataset.size,
             time_emb_dim = test_dataset.size,
@@ -162,7 +162,7 @@ def run_scheduler_tuning_pipeline(
             )
             comp = "no_attention"
         elif model == "unet_with_attention":
-            unet = UNET_with_attention(
+            unet = UNet_with_attention(
                 img_channels = test_dataset.depth,
                 base_channels = test_dataset.size,
                 time_emb_dim = test_dataset.size,
@@ -272,7 +272,7 @@ def run_hyperparam_tuning_pipeline(
                 num_classes = None,
             )
         elif model == "unet_with_attention":
-            unet = UNET_with_attention(
+            unet = UNet_with_attention(
                 img_channels = test_dataset.depth,
                 base_channels = test_dataset.size,
                 time_emb_dim = test_dataset.size,
@@ -333,7 +333,8 @@ def run_sampling_pipeline(
     3. Generates and saves a batch of sample images from the diffusion model.
     """
     # load best hyperparameters
-    study_path = f'hyperparam_tuning/{scheduler}/{dataset_choice}_optuna_study.pkl'
+    comp = "no_attention" if model == "unet_no_attention" else "with_attention"
+    study_path = f'hyperparam_tuning/{scheduler}/{dataset_choice}_{comp}_optuna_study.pkl'
     
     # Check if the file exists
     if not os.path.exists(study_path):
@@ -361,15 +362,13 @@ def run_sampling_pipeline(
             time_emb_dim = test_dataset.size,
             num_classes = None,
         )
-        comp = "no_attention"
     elif model == "unet_with_attention":
-        unet = UNET_with_attention(
+        unet = UNet_with_attention(
             img_channels = test_dataset.depth,
             base_channels = test_dataset.size,
             time_emb_dim = test_dataset.size,
             num_classes = None,
         )
-        comp = "with_attention"
     diffusion.to(device)
     unet.to(device)
 
@@ -415,7 +414,8 @@ def run_inpainting_pipeline(
     3. Selects a single test image, performs image inpainting and then saves the inpainted result.
     """
     # load best hyperparameters
-    study_path = f'hyperparam_tuning/{scheduler}/{dataset_choice}_optuna_study.pkl'
+    comp = "no_attention" if model == "unet_no_attention" else "with_attention"
+    study_path = f'hyperparam_tuning/{scheduler}/{dataset_choice}_{comp}_optuna_study.pkl'
     
     # Check if the file exists
     if not os.path.exists(study_path):
@@ -443,15 +443,13 @@ def run_inpainting_pipeline(
             time_emb_dim = test_dataset.size,
             num_classes = None,
         )
-        comp = "no_attention"
     elif model == "unet_with_attention":
-        unet = UNET_with_attention(
+        unet = UNet_with_attention(
             img_channels = test_dataset.depth,
             base_channels = test_dataset.size,
             time_emb_dim = test_dataset.size,
             num_classes = None,
         )
-        comp = "with_attention"
     diffusion.to(device)
     unet.to(device)
 
