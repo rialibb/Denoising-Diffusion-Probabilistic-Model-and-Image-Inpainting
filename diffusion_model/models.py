@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from .blocks import ResidualBlock, Downsample, Upsample, PositionalEmbedding
+from .blocks import ResidualBlock, Downsample, Upsample, PositionalEmbedding, AttentionBlock
 from config import device
 from tools import save_images
 
@@ -188,7 +188,102 @@ class UNet(nn.Module):
       
       
       
-      
+
+
+     
+class UNet_with_attention(nn.Module):
+    """The denoising model with attention added at downsampling and upsampling stages."""
+    
+    def __init__(self, img_channels, base_channels, time_emb_dim=None, num_classes=None):
+        super().__init__()
+        
+        self.mlp = nn.Sequential(
+            PositionalEmbedding(base_channels),
+            nn.Linear(base_channels, time_emb_dim),
+            nn.SiLU(),
+            nn.Linear(time_emb_dim, time_emb_dim)
+        )
+        
+        self.encoder1 = nn.Conv2d(img_channels, base_channels, 3, padding=1)
+        self.encoder2 = ResidualBlock(base_channels, base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        self.encoder3 = Downsample(base_channels)
+        self.attn1 = AttentionBlock(base_channels) ##
+        
+        self.encoder4 = ResidualBlock(base_channels, 2 * base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        self.encoder5 = Downsample(2 * base_channels)
+        self.attn2 = AttentionBlock(2 * base_channels) ##
+        
+        self.encoder6 = ResidualBlock(2 * base_channels, 2 * base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        self.encoder7 = Downsample(2 * base_channels)
+        self.attn3 = AttentionBlock(2 * base_channels) ##
+        
+        self.encoder8 = ResidualBlock(2 * base_channels, 2 * base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        
+        self.bottleneck = ResidualBlock(2 * base_channels, 2 * base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        
+        self.decoder1 = ResidualBlock(4 * base_channels, 2 * base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        self.decoder2 = ResidualBlock(4 * base_channels, 2 * base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        self.up1 = Upsample(2 * base_channels)
+        self.attn4 = AttentionBlock(2 * base_channels) ##
+        
+        self.decoder3 = ResidualBlock(4 * base_channels, 2 * base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        self.decoder4 = ResidualBlock(4 * base_channels, 2 * base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        self.up2 = Upsample(2 * base_channels)
+        self.attn5 = AttentionBlock(2 * base_channels) ##
+        
+        self.decoder5 = ResidualBlock(4 * base_channels, 2 * base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        self.decoder6 = ResidualBlock(3 * base_channels, base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        self.up3 = Upsample(base_channels)
+        self.attn6 = AttentionBlock(base_channels) ##
+        
+        self.decoder7 = ResidualBlock(2 * base_channels, base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        self.decoder8 = ResidualBlock(2 * base_channels, base_channels, time_emb_dim=time_emb_dim, num_classes=num_classes, dropout=0.1)
+        self.decoder_cnv = nn.Conv2d(base_channels, img_channels, 3, padding=1)
+        
+    def forward(self, x, time=None, labels=None):
+        t = self.mlp(time)
+        
+        x1 = self.encoder1(x)
+        x2 = self.encoder2(x1, t, labels)
+        x3 = self.encoder3(x2)
+        x3 = self.attn1(x3) 
+        
+        x4 = self.encoder4(x3, t, labels)
+        x5 = self.encoder5(x4)
+        x5 = self.attn2(x5)
+        
+        x6 = self.encoder6(x5, t, labels)
+        x7 = self.encoder7(x6)
+        x7 = self.attn3(x7)
+        
+        x8 = self.encoder8(x7, t, labels)
+        
+        x = self.bottleneck(x8, t, labels)
+        
+        x = self.decoder1(torch.cat((x, x8), dim=1), t, labels)
+        x = self.decoder2(torch.cat((x, x7), dim=1), t, labels)
+        x = self.up1(x)
+        x = self.attn4(x)
+        
+        x = self.decoder3(torch.cat((x, x6), dim=1), t, labels)
+        x = self.decoder4(torch.cat((x, x5), dim=1), t, labels)
+        x = self.up2(x)
+        x = self.attn5(x)
+        
+        x = self.decoder5(torch.cat((x, x4), dim=1), t, labels)
+        x = self.decoder6(torch.cat((x, x3), dim=1), t, labels)
+        x = self.up3(x)
+        x = self.attn6(x)
+        
+        x = self.decoder7(torch.cat((x, x2), dim=1), t, labels)
+        x = self.decoder8(torch.cat((x, x1), dim=1), t, labels)
+        x = self.decoder_cnv(x)
+        
+        return x
+
+
+
+
       
   
   

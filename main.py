@@ -19,7 +19,8 @@ if __name__ == "__main__":
     #    lr = 0.001,
     #    scheduler = "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
     #    beta_min = 0.0001,
-    #    beta_max = 0.02
+    #    beta_max = 0.02,
+    #    model = "UNET", # "UNET", "UNET_with_attention"
     #)
 
     #run_scheduler_tuning_pipeline(
@@ -29,7 +30,8 @@ if __name__ == "__main__":
     #    batch_size = 128,
     #    lr = 0.001,
     #    beta_min = 0.0001,
-    #    beta_max = 0.02
+    #    beta_max = 0.02,
+    #    model = "UNET", # "UNET", "UNET_with_attention"
     #)
     
     #run_hyperparam_tuning_pipeline(
@@ -39,17 +41,20 @@ if __name__ == "__main__":
     #    num_trials = 5,
     #    lr = 0.001,
     #    scheduler = "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
+    #    model = "UNET", # "UNET", "UNET_with_attention"
     #)
 
     #run_sampling_pipeline(
     #    dataset_choice = "CIFAR",   # "MNIST", "Fashion" ,  "CIFAR" or "CelebA"
     #    batch_size = 128,
     #    scheduler = "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
+    #    model = "UNET", # "UNET", "UNET_with_attention"
     #)
     
     run_inpainting_pipeline(
         dataset_choice = "CIFAR",   # "MNIST", "Fashion" ,  "CIFAR" or "CelebA"
         batch_size = 128,
         scheduler = "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
-        image_index = 456
+        image_index = 456,
+        model = "UNET", # "UNET", "UNET_with_attention"
     )

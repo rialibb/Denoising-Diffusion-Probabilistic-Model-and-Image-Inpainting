@@ -1,1 +1,1 @@
-from .models import Diffusion, UNet, InPaint
+from .models import Diffusion, UNet, UNet_with_attention, InPaint
