@@ -136,3 +136,50 @@ class PositionalEmbedding(nn.Module):
         emb = torch.cat((emb.sin(), emb.cos()), dim=-1)
         return emb
 
+
+
+class AttentionBlock(nn.Module):
+    """Self-Attention Block for feature refinement.
+    
+    This block is used at downsampling and upsampling steps to capture long-range dependencies.
+    
+    Args:
+      in_channels (int): Number of input channels.
+      num_heads (int): Number of attention heads.
+    """
+    def __init__(self, in_channels, num_heads=4):
+        super(AttentionBlock, self).__init__()
+        
+        assert in_channels % num_heads == 0, "in_channels must be divisible by num_heads"
+        
+        self.num_heads = num_heads
+        self.scale = (in_channels // num_heads) ** -0.5  
+        self.in_channels = in_channels
+        self.qkv = nn.Conv2d(in_channels, in_channels * 3, kernel_size=1, stride=1, padding=0, bias=True)
+        self.proj_out = nn.Conv2d(in_channels, in_channels, kernel_size=1, stride=1, padding=0, bias=True)
+        
+    def forward(self, x):
+        """
+        Args:
+          x of shape (batch_size, in_channels, H, W): Input feature map.
+          
+        Returns:
+          out of shape (batch_size, in_channels, H, W): Refined feature map.
+        """
+        B, C, H, W = x.shape
+        
+        qkv = self.qkv(x)  # (B, 3 * C, H, W)
+        q, k, v = torch.chunk(qkv, chunks=3, dim=1) 
+        q = q.reshape(B, self.num_heads, C // self.num_heads, H * W)  
+        k = k.reshape(B, self.num_heads, C // self.num_heads, H * W) 
+        v = v.reshape(B, self.num_heads, C // self.num_heads, H * W) 
+
+        attn = torch.einsum('bhcd,bhkd->bhck', q, k) * self.scale  # (B, num_heads, H * W, H * W)
+        attn = F.softmax(attn, dim=-1) 
+        
+        out = torch.einsum('bhck,bhkd->bhcd', attn, v)  # (B, num_heads, head_dim, H * W)
+        out = out.reshape(B, C, H, W)  # Reshape to (B, C, H, W)
+        
+        out = self.proj_out(out)
+        
+        return x + out

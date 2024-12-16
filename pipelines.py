@@ -1,6 +1,6 @@
 import torch
 from schedules.schedules import select_betas
-from diffusion_model import Diffusion, UNet, InPaint
+from diffusion_model import Diffusion, UNet, UNET_with_attention, InPaint
 from train_test import f_train, f_test
 from config import device
 from tools import load_data, save_images, plot_losses, SaveBestModelCallback
@@ -22,6 +22,7 @@ def run_training_and_testing_pipeline(
     scheduler = "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
     beta_min = 0.0001,
     beta_max = 0.02,
+    model = "unet_no_attention", # "unet_no_attention", "unet_with_attention"
     save_dir: str = 'saved_models'
     ):
     """
@@ -36,8 +37,7 @@ def run_training_and_testing_pipeline(
         scheduler (str): Beta schedule.
         beta_min (float): Minimum beta value for the scheduler.
         beta_max (float): Maximum beta value for the scheduler.
-        s (float): Stability constant if cosine scheduler used.
-        c (float): Scaling constant if logarithmic scheduler used.
+        model (str): Model name to be used for the reversse process.
         save_dir (str): Directory to save the trained models.
 
     The function performs the following steps:
@@ -57,12 +57,22 @@ def run_training_and_testing_pipeline(
 
     # Create models
     diffusion = Diffusion(betas, T)
-    unet = UNet(
-        img_channels = test_dataset.depth,
-        base_channels = test_dataset.size,
-        time_emb_dim = test_dataset.size,
-        num_classes = None,
-    )
+    if model == "unet_no_attention":
+        unet = UNet(
+            img_channels = test_dataset.depth,
+            base_channels = test_dataset.size,
+            time_emb_dim = test_dataset.size,
+            num_classes = None,
+        )
+        comp = "no_attention"
+    elif model == "unet_with_attention":
+        unet = UNET_with_attention(
+            img_channels = test_dataset.depth,
+            base_channels = test_dataset.size,
+            time_emb_dim = test_dataset.size,
+            num_classes = None,
+        )
+        comp = "with_attention"
     diffusion.to(device)
     unet.to(device)
 
@@ -70,8 +80,8 @@ def run_training_and_testing_pipeline(
     save_dir = os.path.join(save_dir, scheduler)
     os.makedirs(save_dir, exist_ok=True)
     # create the save path for the model
-    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_diffusion.pth')
-    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_unet.pth')
+    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_diffusion_{comp}.pth')
+    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_{model}.pth')
 
     # Train models
     train_losses, val_losses = f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
@@ -97,6 +107,7 @@ def run_scheduler_tuning_pipeline(
     lr = 0.001,
     beta_min = 0.0001,
     beta_max = 0.02,
+    model = "unet_no_attention", # "unet_no_attention", "unet_with_attention"
     save_dir: str = 'saved_models'
     ):
     """
@@ -110,6 +121,7 @@ def run_scheduler_tuning_pipeline(
         lr (float): Learning rate for the optimizer.
         beta_min (float): Minimum beta value for the scheduler.
         beta_max (float): Maximum beta value for the scheduler.
+        model (str): Model name to be used for the reversse process.
         save_dir (str): Directory to save the trained models.
 
     The function performs the following steps:
@@ -141,12 +153,22 @@ def run_scheduler_tuning_pipeline(
 
         # Create models
         diffusion = Diffusion(betas, T)
-        unet = UNet(
-            img_channels = test_dataset.depth,
-            base_channels = test_dataset.size,
-            time_emb_dim = test_dataset.size,
-            num_classes = None,
-        )
+        if model == "unet_no_attention":
+            unet = UNet(
+                img_channels = test_dataset.depth,
+                base_channels = test_dataset.size,
+                time_emb_dim = test_dataset.size,
+                num_classes = None,
+            )
+            comp = "no_attention"
+        elif model == "unet_with_attention":
+            unet = UNET_with_attention(
+                img_channels = test_dataset.depth,
+                base_channels = test_dataset.size,
+                time_emb_dim = test_dataset.size,
+                num_classes = None,
+            )
+            comp = "with_attention"
         diffusion.to(device)
         unet.to(device)
         
@@ -178,8 +200,8 @@ def run_scheduler_tuning_pipeline(
     save_dir = os.path.join(save_dir, best_scheduler)
     os.makedirs(save_dir, exist_ok=True)
     # create the save path for the model
-    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_diffusion.pth')
-    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_unet.pth')
+    save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_diffusion_{comp}.pth')
+    save_path_unet = os.path.join(save_dir, f'{dataset_choice}_{model}.pth')
     # Save best models
     torch.save(best_diffusion.state_dict(), save_path_diffusion)
     torch.save(best_unet.state_dict(), save_path_unet)
@@ -202,6 +224,7 @@ def run_hyperparam_tuning_pipeline(
     num_trials = 5,
     lr = 0.001,
     scheduler = "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
+    model = "unet_no_attention", # "unet_no_attention", "unet_with_attention"
     ):
     """
     Runs hyperparameter tuning using Bayesian Optimization, with Optuna.
@@ -213,6 +236,7 @@ def run_hyperparam_tuning_pipeline(
         num_trials (int): Number of trials to run for hyperparameter tuning.
         lr (float) : Learning rate for the optimizer.
         scheduler (str): Beta scheduler.
+        model (str): Model name to be used for the reversse process.
 
     The function performs the following steps:
     1. Loads the dataset and splits it into train, validation, and test sets.
@@ -240,13 +264,20 @@ def run_hyperparam_tuning_pipeline(
         
         # Create diffusion and UNet models
         diffusion = Diffusion(betas, num_timesteps=T)
-        unet = UNet(
-            img_channels=test_dataset.depth,
-            base_channels=test_dataset.size,
-            time_emb_dim=test_dataset.size,
-            num_classes=None,
-        )
-        
+        if model == "unet_no_attention":
+            unet = UNet(
+                img_channels = test_dataset.depth,
+                base_channels = test_dataset.size,
+                time_emb_dim = test_dataset.size,
+                num_classes = None,
+            )
+        elif model == "unet_with_attention":
+            unet = UNET_with_attention(
+                img_channels = test_dataset.depth,
+                base_channels = test_dataset.size,
+                time_emb_dim = test_dataset.size,
+                num_classes = None,
+            )
         diffusion.to(device)
         unet.to(device)
 
@@ -254,10 +285,14 @@ def run_hyperparam_tuning_pipeline(
         _, val_losses = f_train(diffusion, unet, train_loader, val_loader, n_epochs=n_epochs, learning_rate=lr)
 
         # Save only best model
-        save_best_model(diffusion, unet, val_losses[-1], dataset_choice, scheduler)
+        save_best_model(diffusion, unet, val_losses[-1], dataset_choice, scheduler, comp, model)
     
         return val_losses[-1]
     
+    if model == "unet_with_attention":
+        comp = "with_attention"
+    else:
+        comp = "no_attention"
 
     # Set up the Optuna study and optimize
     study = optuna.create_study(direction='minimize')
@@ -270,7 +305,7 @@ def run_hyperparam_tuning_pipeline(
 
     # Save the study results in a file for later use
     os.makedirs(f'hyperparam_tuning/{scheduler}', exist_ok=True)
-    joblib.dump(study, f'hyperparam_tuning/{scheduler}/{dataset_choice}_optuna_study.pkl')
+    joblib.dump(study, f'hyperparam_tuning/{scheduler}/{dataset_choice}_{comp}_optuna_study.pkl')
 
 
 
@@ -281,6 +316,7 @@ def run_sampling_pipeline(
     dataset_choice = "MNIST",   # "MNIST", "Fashion" ,  "CIFAR" or "CelebA"
     batch_size = 128,
     scheduler =  "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
+    model = "unet_no_attention", # "unet_no_attention", "unet_with_attention"
     ):
     """
     Runs the sampling pipeline using a diffusion model and UNet.
@@ -289,6 +325,7 @@ def run_sampling_pipeline(
         dataset_choice (str): Dataset to use.
         batch_size (int): Batch size for loading the dataset.
         scheduler (str): Beta scheduler.
+        model (str): Model name to be used for the reversse process.
 
     The function performs the following steps:
     1. Loads the test dataset for the specified dataset choice.
@@ -317,24 +354,34 @@ def run_sampling_pipeline(
 
     # Create models
     diffusion = Diffusion(betas, T)
-    unet = UNet(
-        img_channels = test_dataset.depth,
-        base_channels = test_dataset.size,
-        time_emb_dim = test_dataset.size,
-        num_classes = None,
-    )
+    if model == "unet_no_attention":
+        unet = UNet(
+            img_channels = test_dataset.depth,
+            base_channels = test_dataset.size,
+            time_emb_dim = test_dataset.size,
+            num_classes = None,
+        )
+        comp = "no_attention"
+    elif model == "unet_with_attention":
+        unet = UNET_with_attention(
+            img_channels = test_dataset.depth,
+            base_channels = test_dataset.size,
+            time_emb_dim = test_dataset.size,
+            num_classes = None,
+        )
+        comp = "with_attention"
     diffusion.to(device)
     unet.to(device)
 
     # Load models
-    diffusion.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_diffusion.pth'))
-    unet.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_unet.pth'))
+    diffusion.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_diffusion_{comp}.pth'))
+    unet.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_{model}.pth'))
     
     # Sample generation
     x_shape = (25, test_dataset.depth, test_dataset.size, test_dataset.size)
     samples = diffusion.sample(unet, x_shape)
     samples01 = ((samples + 1) / 2).clip(0, 1)
-    save_images(samples01, dataset_choice, save_dir=f'generated_samples/{scheduler}', image_type = 'samples' , cmap='binary', ncol=5)
+    save_images(samples01, dataset_choice, save_dir=f'generated_samples/{scheduler}', image_type = 'samples' , cmap='binary', comp =comp, ncol=5)
     
     
     
@@ -349,7 +396,8 @@ def run_inpainting_pipeline(
     dataset_choice = "MNIST",   # "MNIST", "Fashion" ,  "CIFAR" or "CelebA"
     batch_size = 128,
     scheduler =  "linear",  # "linear", "cosine", "quadratic", "exponential", "logarithmic"
-    image_index = 5643
+    image_index = 5643,
+    model = "unet_no_attention", # "unet_no_attention", "unet_with_attention"
     ):
     """
     Runs the inpainting pipeline using a diffusion model and UNet.
@@ -358,7 +406,8 @@ def run_inpainting_pipeline(
         dataset_choice (str): Dataset to use.
         batch_size (int): Batch size for loading the dataset.
         scheduler (str): Beta scheduler.
-        image_index (int): an index of an image from test set to inpaint
+        image_index (int): an index of an image from test set to inpaint.
+        model (str): Model name to be used for the reversse process.
 
     The function performs the following steps:
     1. Loads the test dataset for the specified dataset choice.
@@ -387,20 +436,30 @@ def run_inpainting_pipeline(
 
     # Create models
     diffusion = Diffusion(betas, T)
-    unet = UNet(
-        img_channels = test_dataset.depth,
-        base_channels = test_dataset.size,
-        time_emb_dim = test_dataset.size,
-        num_classes = None,
-    )
+    if model == "unet_no_attention":
+        unet = UNet(
+            img_channels = test_dataset.depth,
+            base_channels = test_dataset.size,
+            time_emb_dim = test_dataset.size,
+            num_classes = None,
+        )
+        comp = "no_attention"
+    elif model == "unet_with_attention":
+        unet = UNET_with_attention(
+            img_channels = test_dataset.depth,
+            base_channels = test_dataset.size,
+            time_emb_dim = test_dataset.size,
+            num_classes = None,
+        )
+        comp = "with_attention"
     diffusion.to(device)
     unet.to(device)
 
     # Load models
-    diffusion.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_diffusion.pth'))
-    unet.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_unet.pth'))
+    diffusion.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_diffusion_{comp}.pth'))
+    unet.load_state_dict(torch.load(f'saved_models/{scheduler}/{dataset_choice}_best_{model}.pth'))
 
     # Inpainting masked image
     image = test_dataset[image_index]  # Select one image from the test dataset
     inpaint = InPaint()
-    inpaint.sample(diffusion, unet, image, dataset_choice, scheduler)
+    inpaint.sample(diffusion, unet, image, dataset_choice, scheduler, comp)

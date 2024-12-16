@@ -51,7 +51,7 @@ def load_data(dataset_choice, batch_size):
 
 
 
-def save_images(images, dataset_choice, save_dir='generated_samples', image_type='samples', ncol=5, scale_factor=2, **kwargs):
+def save_images(images, dataset_choice, save_dir='generated_samples', image_type='samples', comp="no_attention", ncol=5, scale_factor=2, **kwargs):
     """
     Save generated images to a folder with increased resolution.
 
@@ -67,7 +67,7 @@ def save_images(images, dataset_choice, save_dir='generated_samples', image_type
     os.makedirs(save_dir, exist_ok=True)
 
     # Generate a unique filename using the current timestamp
-    save_path = os.path.join(save_dir, f'{dataset_choice}_{image_type}.png')
+    save_path = os.path.join(save_dir, f'{dataset_choice}_{comp}_{image_type}.png')
 
     # Rearrange the images into a grid
     out = rearrange(images, '(b1 b2) c h w -> c (b1 h) (b2 w)', b2=ncol).cpu()
@@ -161,14 +161,14 @@ class SaveBestModelCallback:
     def __init__(self):
         self.best_val_loss = float('inf')  # Start with a very large validation loss
 
-    def __call__(self, diffusion, unet, val_loss, dataset_choice, scheduler):
+    def __call__(self, diffusion, unet, val_loss, dataset_choice, scheduler, comp, model):
         """Check if the current validation loss is the best, and if so, save the model."""
         if val_loss < self.best_val_loss:
             save_dir = 'saved_models'
             save_dir = os.path.join(save_dir, scheduler)
             os.makedirs(save_dir, exist_ok=True)
-            save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_best_diffusion.pth')
-            save_path_unet = os.path.join(save_dir, f'{dataset_choice}_best_unet.pth')
+            save_path_diffusion = os.path.join(save_dir, f'{dataset_choice}_best_diffusion_{comp}.pth')
+            save_path_unet = os.path.join(save_dir, f'{dataset_choice}_best_{model}.pth')
 
             print(f"New best model found! Saving model with val_loss: {val_loss:.4f}")
             self.best_val_loss = val_loss
