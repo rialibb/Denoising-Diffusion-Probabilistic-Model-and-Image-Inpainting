@@ -1,6 +1,6 @@
 import torch
 from schedules.schedules import select_betas
-from diffusion_model import Diffusion, UNet, UNET_with_attention, InPaint
+from diffusion_model import Diffusion, UNet, UNet_with_attention, InPaint
 from train_test import f_train, f_test
 from config import device
 from tools import load_data, save_images, plot_losses, SaveBestModelCallback
