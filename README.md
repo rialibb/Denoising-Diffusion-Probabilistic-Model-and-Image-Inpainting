@@ -2,9 +2,9 @@
 
 This project aims to implement, train and use a `Denoising Diffusion Probabilistic Model (DDPM)` presented in the paper by [Ho et al., 2020](https://arxiv.org/abs/2006.11239).
 
-In this project, we successfully implemented a Denoising Diffusion Probabilistic Model (DDPM) from scratch, focusing on both the theoretical and practical aspects of the framework. We introduced a \textbf{simplified version of the U-Net architecture} to reduce computational complexity while maintaining performance. To enhance the model's effectiveness, we explored different \textbf{noise schedulers} and performed \textbf{hyperparameter tuning} to optimize the training process.  
+In this project, we successfully implemented a Denoising Diffusion Probabilistic Model (DDPM) from scratch, focusing on both the theoretical and practical aspects of the framework. We introduced a **simplified version of the U-Net architecture** to reduce computational complexity while maintaining performance. To enhance the model's effectiveness, we explored different **noise schedulers** and performed **hyperparameter tuning** to optimize the training process.  
 
-Furthermore, we demonstrated the model's capabilities through \textbf{sample generation} and \textbf{image inpainting tasks}, showcasing its ability to produce high-quality and coherent results. To address the limitations of standard U-Net, we developed an improved version by integrating \textbf{attention mechanisms}, enabling the model to better capture long-range dependencies and refine global structures in the images.  
+Furthermore, we demonstrated the model's capabilities through **sample generation** and **image inpainting tasks**, showcasing its ability to produce high-quality and coherent results. To address the limitations of standard U-Net, we developed an improved version by integrating **attention mechanisms**, enabling the model to better capture long-range dependencies and refine global structures in the images.  
 
 These contributions collectively advance the understanding and implementation of DDPMs, providing a solid foundation for future work on diffusion-based generative models and their applications.
 
