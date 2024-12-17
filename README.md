@@ -11,23 +11,6 @@ These contributions collectively advance the understanding and implementation of
 
 Supports MNIST, Fashion-MNIST, CIFAR10 and CelebA datasets. You can use any other dataset as well, but the model architecture and training parameters might need some changes.
 
-## Requirements
-
-* torch
-* torchaudio
-* numpy
-* matplotlib
-* pytorch-fid
-* tools
-* matplotlib
-* einops
-* IPython
-* gdown
-* pytorch-lightning
-* pytorch_fid
-* optuna
-* joblib
-
 
 ## Content description
 Here, we will give a short description about the usecases of every file and folder in this project.
@@ -57,6 +40,25 @@ Here, we will give a short description about the usecases of every file and fold
 * `tools.py`: contains some useful functions used in the different pipelines to save images, loads datasets, plot losses and save best trained models.
 
 * `train_test.py`: contains the implementation of the train function used to train and validate the different diffusion models, as well as the test function to test the trained model based on test set.
+
+
+## Requirements
+
+* torch
+* torchaudio
+* numpy
+* matplotlib
+* pytorch-fid
+* tools
+* matplotlib
+* einops
+* IPython
+* gdown
+* pytorch-lightning
+* pytorch_fid
+* optuna
+* joblib
+
 
 
 ## Generated Images
